@@ -4,8 +4,7 @@ import (
 	"context"
 
 	es "github.com/HomesNZ/buyer-demand/internal/client/elasticsearch"
-	redshift "github.com/HomesNZ/buyer-demand/internal/client/redshift"
-	"github.com/HomesNZ/gateway/errors"
+	"github.com/HomesNZ/buyer-demand/internal/client/redshift"
 	"github.com/sirupsen/logrus"
 )
 
@@ -27,14 +26,4 @@ type service struct {
 	redshiftClient redshift.Client
 	esClient       es.Client
 	logger         *logrus.Entry
-}
-
-func (s service) DailyBuyerDemandTableRefresh(ctx context.Context) error {
-	resp, err := s.esClient.QueryAllListings(ctx)
-	err = s.redshiftClient.DailyBuyerDemandTablerefresh(ctx)
-	if err != nil {
-		return errors.Wrap(err, "DailyBuyerDemandTablerefresh")
-	}
-	s.logger.Info("DailyBuyerDemandTablerefresh is done")
-	return nil
 }

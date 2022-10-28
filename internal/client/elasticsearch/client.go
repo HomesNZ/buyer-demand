@@ -2,6 +2,9 @@ package elasticsearch
 
 import (
 	"context"
+	"encoding/json"
+	mapItemES "github.com/HomesNZ/buyer-demand/internal/model"
+	"github.com/pkg/errors"
 
 	"github.com/HomesNZ/elastic"
 	"github.com/sirupsen/logrus"
@@ -13,7 +16,7 @@ var (
 )
 
 type Client interface {
-	QueryAllListings(ctx context.Context) (*elastic.SearchResult, error)
+	QueryAll(ctx context.Context) (mapItemES.MapItemESs, error)
 }
 
 type client struct {
@@ -21,10 +24,9 @@ type client struct {
 	conn *elastic.Client
 }
 
-func (es *client) QueryAllListings(ctx context.Context) (*elastic.SearchResult, error) {
-
+func (es *client) QueryAll(ctx context.Context) (mapItemES.MapItemESs, error) {
 	query := elastic.NewBoolQuery().Filter(
-		elastic.NewExistsQuery("listing_id"),
+		elastic.NewExistsQuery("property_id"),
 	)
 	search := es.conn.
 		Search().
@@ -32,5 +34,24 @@ func (es *client) QueryAllListings(ctx context.Context) (*elastic.SearchResult, 
 		Type("map_item").
 		Query(query)
 
-	return search.Do(ctx)
+	searchResult, err := search.Do(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "Do")
+	}
+
+	return parseToMapItem(searchResult.Hits.Hits)
+}
+
+func parseToMapItem(hits []*elastic.SearchHit) (mapItemES.MapItemESs, error) {
+	results := mapItemES.MapItemESs{}
+	for _, v := range hits {
+		r := &mapItemES.MapItemES{}
+		err := json.Unmarshal(*v.Source, r)
+		if err != nil {
+			return nil, errors.Wrap(err, "Unmarshal")
+		}
+
+		results = append(results, r)
+	}
+	return results, nil
 }

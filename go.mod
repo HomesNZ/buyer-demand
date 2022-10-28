@@ -13,6 +13,9 @@ require (
 	github.com/HomesNZ/go-common/version v0.0.0-20220803012308-ffd3f11c730a
 	github.com/HomesNZ/listing-service v0.0.0-20221011002947-983dab15811e
 	github.com/go-ozzo/ozzo-validation/v4 v4.3.0
+	github.com/onsi/ginkgo v1.16.4
+	github.com/onsi/gomega v1.14.0
+	golang.org/x/exp v0.0.0-20221026153819-32f3d567a233
 )
 
 require (
@@ -41,6 +44,7 @@ require (
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/cockroachdb/apd v1.1.0 // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
+	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/go-ozzo/ozzo-validation v3.6.0+incompatible // indirect
 	github.com/golang/mock v1.6.0 // indirect
 	github.com/gomodule/redigo v2.0.0+incompatible // indirect
@@ -62,15 +66,18 @@ require (
 	github.com/lestrrat-go/jwx v0.9.2 // indirect
 	github.com/lib/pq v1.10.2 // indirect
 	github.com/mna/redisc v1.2.1 // indirect
+	github.com/nxadm/tail v1.4.8 // indirect
 	github.com/satori/go.uuid v1.2.0 // indirect
 	github.com/shopspring/decimal v1.2.0 // indirect
 	github.com/speps/go-hashids v2.0.0+incompatible // indirect
 	golang.org/x/crypto v0.0.0-20220722155217-630584e8d5aa // indirect
+	golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2 // indirect
 	golang.org/x/text v0.3.7 // indirect
+	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
 
 require (
-	github.com/HomesNZ/gateway v0.0.0-20221011003324-710f970395a5
 	github.com/bugsnag/bugsnag-go v2.1.0+incompatible // indirect
 	github.com/bugsnag/bugsnag-go/v2 v2.1.2 // indirect
 	github.com/bugsnag/panicwrap v1.3.4 // indirect
@@ -86,7 +93,7 @@ require (
 	github.com/smartystreets/assertions v1.0.1 // indirect
 	github.com/smartystreets/go-aws-auth v0.0.0-20180515143844-0c1422d1fdb9 // indirect
 	github.com/smartystreets/gunit v1.1.3 // indirect
-	golang.org/x/sys v0.0.0-20210615035016-665e8c7367d1 // indirect
+	golang.org/x/sys v0.1.0 // indirect
 	gopkg.in/guregu/null.v3 v3.5.0
 	gopkg.in/olivere/elastic.v5 v5.0.86 // indirect
 )
