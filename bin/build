@@ -1,0 +1,15 @@
+
+# Exit if anything fails
+set -e
+
+echo "Running tests..."
+go vet $(go list ./... | grep -v /vendor/)
+go test -v -race ./...
+
+export SERVICE_NAME='buyer-demand';
+echo "Building container..."
+./bin/compile_static
+./bin/build_container
+echo "Deploying..."
+./bin/deploy
+echo "Build complete!"

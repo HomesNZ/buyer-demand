@@ -1,0 +1,32 @@
+
+# Exit if anything fails
+set -e
+
+if [ "$TRAVIS_PULL_REQUEST" != "false" ]
+then
+  # Deploy specific pull request
+  QUAY_TAG="pr-$TRAVIS_PULL_REQUEST"
+  ENV=staging
+elif [ "$TRAVIS_BRANCH" = "master" ]
+then
+  # Deploy production
+  QUAY_TAG="latest"
+  ENV=production
+elif [ "$TRAVIS_BRANCH" = "develop" ]
+then
+  # Deploy staging/development
+  QUAY_TAG="develop"
+  ENV=staging
+else
+  echo "Not deploying: branch is not master or develop, and this isn't a PR build"
+  exit 0
+fi
+
+IMAGE_DIGEST=$(docker image ls --digests --format "{{.Repository}} {{.Digest}}" | grep "$SERVICE_NAME" | head -n 1 | awk '{print $2}')
+CANARY_HOST=$(host -t srv _deploy._tcp.${ENV}.deploy.homes.co.nz | head -n 1 | awk '{print $8}')
+
+echo "Telling canary (${CANARY_HOST}) to deploy ${SERVICE_NAME}:${QUAY_TAG}@${IMAGE_DIGEST} to ${ENV}..."
+curl -XPOST -f \
+  -H "Authorization: HomesService ${CANARY_KEY}" \
+  "https://${CANARY_HOST}/deploy?service_name=${SERVICE_NAME}&version=${QUAY_TAG}@${IMAGE_DIGEST}&env=${ENV}"
+echo "Done!"
