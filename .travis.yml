@@ -3,7 +3,7 @@ sudo: false
 language: go
 
 go:
-  - "1.18"
+  - "1.19"
 
 env:
   global:
