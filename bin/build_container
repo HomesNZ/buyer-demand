@@ -41,8 +41,3 @@ echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
 aws ecr get-login-password --region ap-southeast-2 | docker login --username AWS --password-stdin ${ACCOUNT_ID}.dkr.ecr.ap-southeast-2.amazonaws.com
 docker build -t ${ACCOUNT_ID}.dkr.ecr.ap-southeast-2.amazonaws.com/${SERVICE_NAME}:${DOCKER_TAG} .
 docker push ${ACCOUNT_ID}.dkr.ecr.ap-southeast-2.amazonaws.com/${SERVICE_NAME}:${DOCKER_TAG}
-
-echo "Building ${TRAVIS_COMMIT} as quay.io/homes/${SERVICE_NAME}:${DOCKER_TAG}"
-docker login -u=${QUAY_IO_USERNAME} -p=${QUAY_IO_PASSWORD} quay.io
-docker tag ${ACCOUNT_ID}.dkr.ecr.ap-southeast-2.amazonaws.com/${SERVICE_NAME}:${DOCKER_TAG} quay.io/homes/${SERVICE_NAME}:${DOCKER_TAG}
-docker push quay.io/homes/${SERVICE_NAME}:${DOCKER_TAG}
