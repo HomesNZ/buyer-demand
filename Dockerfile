@@ -6,7 +6,5 @@ WORKDIR /app
 COPY buyer-demand /app/
 
 COPY .env.default /app/
-COPY data/ /app/data
-COPY ./migrations /app/migrations
 
 ENTRYPOINT ["./buyer-demand"]
