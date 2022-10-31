@@ -10,13 +10,15 @@ import (
 )
 
 type MapItemES struct {
-	NumBedrooms           null.Int    `json:"num_bedrooms"`
-	NumBathrooms          null.Int    `json:"num_bathrooms"`
-	Suburb                null.String `json:"nested_address.suburb"`
-	CategoryCode          null.String `json:"category_code"`
-	Price                 null.Float  `json:"price"`
-	ListingId             null.String `json:"listing_id"`
-	ListingRecentSaleDate null.Time   `json:"listing_recent_sale_date"`
+	NumBedrooms         null.Int    `json:"num_bedrooms"`
+	NumBathrooms        null.Int    `json:"num_bathrooms"`
+	Suburb              null.String `json:"nested_address.suburb"`
+	PropertySubCategory null.String `json:"property_sub_category"`
+	Price               null.Float  `json:"price"`
+	ListingId           null.String `json:"listing_id"`
+	PropertyState       null.Int    `json:"property_state"`
+	LatestListingDate   null.Time   `json:"latest_listing_date"`
+	LatestSoldDate      null.Time   `json:"latest_sold_date"`
 }
 
 type MapItemESs []MapItemES
@@ -27,7 +29,7 @@ func (i *MapItemES) getKey() buyerDemandKey {
 			strconv.FormatInt(i.NumBedrooms.ValueOrZero(), 10),
 			strconv.FormatInt(i.NumBathrooms.ValueOrZero(), 10),
 			i.Suburb.ValueOrZero(),
-			i.CategoryCode.ValueOrZero()[0:2],
+			i.PropertySubCategory.ValueOrZero(),
 		}, BuyerDemandKeySeparator))
 }
 
@@ -56,10 +58,10 @@ func (items MapItemESs) GenerateBuyerDemands() BuyerDemands {
 func (items MapItemESs) prepareData() (map[buyerDemandKey]MapItemESs, map[buyerDemandKey][]int64) {
 	now := time.Now()
 	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
-	lastNinetyDays := today.AddDate(0, 0, 90)
+	lastNinetyDays := today.AddDate(0, 0, -90)
 
-	var currentListingMap map[buyerDemandKey]MapItemESs
-	var daysToSellMap map[buyerDemandKey][]int64
+	currentListingMap := map[buyerDemandKey]MapItemESs{}
+	daysToSellMap := map[buyerDemandKey][]int64{}
 
 	for _, item := range items {
 		key := item.getKey()
@@ -75,15 +77,22 @@ func (items MapItemESs) prepareData() (map[buyerDemandKey]MapItemESs, map[buyerD
 			continue
 		}
 
-		if item.ListingRecentSaleDate.Valid && item.ListingRecentSaleDate.Time.After(lastNinetyDays) {
+		if item.PropertyState.Valid && item.PropertyState.ValueOrZero() == 2 &&
+			item.LatestListingDate.Valid && item.LatestSoldDate.Valid &&
+			item.LatestSoldDate.ValueOrZero().After(item.LatestListingDate.ValueOrZero()) &&
+			item.LatestListingDate.Time.After(lastNinetyDays) {
+
 			daysToSell, ok := daysToSellMap[key]
 			if !ok {
 				daysToSell = []int64{}
 			}
 
-			t := item.ListingRecentSaleDate.ValueOrZero()
-			d := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
-			days := int64(math.Round(today.Sub(d).Hours() / 24))
+			listingSoldTime := item.LatestSoldDate.ValueOrZero()
+			listingSoldDate := time.Date(listingSoldTime.Year(), listingSoldTime.Month(), listingSoldTime.Day(), 0, 0, 0, 0, listingSoldTime.Location())
+
+			listingTime := item.LatestListingDate.ValueOrZero()
+			listingDate := time.Date(listingTime.Year(), listingTime.Month(), listingTime.Day(), 0, 0, 0, 0, listingTime.Location())
+			days := int64(math.Round(listingSoldDate.Sub(listingDate).Hours() / 24))
 
 			daysToSell = append(daysToSell, days)
 			daysToSellMap[key] = daysToSell

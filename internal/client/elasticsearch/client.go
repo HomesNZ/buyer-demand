@@ -45,8 +45,8 @@ func (es *client) QueryAll(ctx context.Context) (mapItemES.MapItemESs, error) {
 func parseToMapItem(hits []*elastic.SearchHit) (mapItemES.MapItemESs, error) {
 	results := mapItemES.MapItemESs{}
 	for _, v := range hits {
-		r := &mapItemES.MapItemES{}
-		err := json.Unmarshal(*v.Source, r)
+		r := mapItemES.MapItemES{}
+		err := json.Unmarshal(*v.Source, &r)
 		if err != nil {
 			return nil, errors.Wrap(err, "Unmarshal")
 		}
