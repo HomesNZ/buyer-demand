@@ -1,5 +1,5 @@
 # Start from base image with known SSL certs
-FROM centurylink/ca-certs
+FROM alpine
 WORKDIR /app
 
 # Copy statically compiled binary
