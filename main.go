@@ -2,10 +2,9 @@ package main
 
 import (
 	"context"
-	"github.com/HomesNZ/buyer-demand/internal/service"
-
 	es "github.com/HomesNZ/buyer-demand/internal/client/elasticsearch"
-	"github.com/HomesNZ/buyer-demand/internal/client/redshift"
+	repo "github.com/HomesNZ/buyer-demand/internal/repository"
+	"github.com/HomesNZ/buyer-demand/internal/service"
 	"github.com/HomesNZ/go-common/bugsnag"
 	"github.com/HomesNZ/go-common/env"
 	"github.com/HomesNZ/go-common/logger"
@@ -32,13 +31,13 @@ func main() {
 		log.WithError(err).Fatal()
 	}
 
-	redshiftClient, err := redshift.NewFromEnv(ctx)
+	repos, err := repo.New(ctx)
 	if err != nil {
 		bugsnag.Notify(err)
 		log.WithError(err).Fatal()
 	}
 
-	s, err := service.New(log, redshiftClient, elasticClient)
+	s, err := service.New(log, repos, elasticClient)
 	if err != nil {
 		bugsnag.Notify(err)
 		log.WithError(err).Fatal()

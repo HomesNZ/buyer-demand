@@ -1,4 +1,4 @@
-package model
+package entity
 
 import (
 	"github.com/HomesNZ/buyer-demand/internal/util"
@@ -12,13 +12,17 @@ import (
 type MapItemES struct {
 	NumBedrooms         null.Int    `json:"num_bedrooms"`
 	NumBathrooms        null.Int    `json:"num_bathrooms"`
-	Suburb              null.String `json:"nested_address.suburb"`
+	Address             Address     `json:"nested_address"`
 	PropertySubCategory null.String `json:"property_sub_category"`
 	Price               null.Float  `json:"price"`
 	ListingId           null.String `json:"listing_id"`
 	PropertyState       null.Int    `json:"property_state"`
 	LatestListingDate   null.Time   `json:"latest_listing_date"`
 	LatestSoldDate      null.Time   `json:"latest_sold_date"`
+}
+
+type Address struct {
+	SuburbID null.Int `json:"suburb_id"`
 }
 
 type MapItemESs []MapItemES
@@ -28,11 +32,22 @@ func (i *MapItemES) getKey() buyerDemandKey {
 		[]string{
 			strconv.FormatInt(i.NumBedrooms.ValueOrZero(), 10),
 			strconv.FormatInt(i.NumBathrooms.ValueOrZero(), 10),
-			i.Suburb.ValueOrZero(),
+			strconv.FormatInt(i.Address.SuburbID.ValueOrZero(), 10),
 			i.PropertySubCategory.ValueOrZero(),
 		}, BuyerDemandKeySeparator))
 }
 
+// GenerateBuyerDemands
+//
+//	 1 Median days to sell:
+//	     listing_id is null && latest sold date > latest listing date && latest listing date > today - 90
+//			return median (latest sold date - latest listing date)
+//	 2 Median sale price:
+//	     listing_id is not null && price is not null
+//	     return median (price)
+//	 3 Number of for sale properties:
+//	     listing_id is not null
+//	     return count (*)
 func (items MapItemESs) GenerateBuyerDemands() BuyerDemands {
 	currentListingMap, daysToSellMap := items.prepareData()
 

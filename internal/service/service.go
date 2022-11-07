@@ -2,17 +2,17 @@ package service
 
 import (
 	"context"
+	"github.com/HomesNZ/buyer-demand/internal/repository"
 
 	es "github.com/HomesNZ/buyer-demand/internal/client/elasticsearch"
-	"github.com/HomesNZ/buyer-demand/internal/client/redshift"
 	"github.com/sirupsen/logrus"
 )
 
-func New(log *logrus.Entry, redshift redshift.Client, esClient es.Client) (Service, error) {
+func New(log *logrus.Entry, repos repository.Repositories, esClient es.Client) (Service, error) {
 	s := &service{
-		redshiftClient: redshift,
-		esClient:       esClient,
-		logger:         log,
+		repos:    repos,
+		esClient: esClient,
+		logger:   log,
 	}
 
 	return s, nil
@@ -23,7 +23,7 @@ type Service interface {
 }
 
 type service struct {
-	redshiftClient redshift.Client
-	esClient       es.Client
-	logger         *logrus.Entry
+	repos    repository.Repositories
+	esClient es.Client
+	logger   *logrus.Entry
 }

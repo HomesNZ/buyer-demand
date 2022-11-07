@@ -8,7 +8,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	model "github.com/HomesNZ/buyer-demand/internal/model"
+	entity "github.com/HomesNZ/buyer-demand/internal/entity"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -35,17 +35,17 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 	return m.recorder
 }
 
-// QueryAll mocks base method.
-func (m *MockClient) QueryAll(ctx context.Context) (model.MapItemESs, error) {
+// BySuburbID mocks base method.
+func (m *MockClient) BySuburbID(ctx context.Context, suburbID int) (entity.MapItemESs, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "QueryAll", ctx)
-	ret0, _ := ret[0].(model.MapItemESs)
+	ret := m.ctrl.Call(m, "BySuburbID", ctx, suburbID)
+	ret0, _ := ret[0].(entity.MapItemESs)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// QueryAll indicates an expected call of QueryAll.
-func (mr *MockClientMockRecorder) QueryAll(ctx interface{}) *gomock.Call {
+// BySuburbID indicates an expected call of BySuburbID.
+func (mr *MockClientMockRecorder) BySuburbID(ctx, suburbID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "QueryAll", reflect.TypeOf((*MockClient)(nil).QueryAll), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BySuburbID", reflect.TypeOf((*MockClient)(nil).BySuburbID), ctx, suburbID)
 }

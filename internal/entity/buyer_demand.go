@@ -1,4 +1,4 @@
-package model
+package entity
 
 import (
 	"gopkg.in/guregu/null.v3"
@@ -11,11 +11,11 @@ const BuyerDemandKeySeparator = "-"
 type BuyerDemand struct {
 	NumBedrooms            null.Int    `json:"num_bedrooms"`
 	NumBathrooms           null.Int    `json:"num_bathrooms"`
-	Suburb                 null.String `json:"nested_address.suburb"`
+	SuburbID               null.Int    `json:"suburb_id"`
 	PropertyType           null.String `json:"property_type"`
 	MedianDaysToSell       null.Int    `json:"median_days_to_sell"`
 	MedianSalePrice        float64     `json:"median_sale_price"`
-	NumOfForSaleProperties int         `json:"num_of_for_sale_properties"`
+	NumOfForSaleProperties int         `json:"num_for_sale_properties"`
 }
 
 type BuyerDemands []BuyerDemand
@@ -43,9 +43,13 @@ func (key buyerDemandKey) generateBuyerDemandFromKey() BuyerDemand {
 		numBathroom = null.IntFrom(part2)
 	}
 
-	var suburb null.String
-	if keyArray[2] != "" {
-		suburb = null.StringFrom(keyArray[2])
+	part3, err := strconv.ParseInt(keyArray[2], 0, 64)
+	if err != nil {
+		part3 = 0
+	}
+	var suburbID null.Int
+	if part3 != 0 {
+		suburbID = null.IntFrom(part3)
 	}
 
 	var propertyType null.String
@@ -56,7 +60,7 @@ func (key buyerDemandKey) generateBuyerDemandFromKey() BuyerDemand {
 	return BuyerDemand{
 		NumBedrooms:  numBedroom,
 		NumBathrooms: numBathroom,
-		Suburb:       suburb,
+		SuburbID:     suburbID,
 		PropertyType: propertyType,
 	}
 }

@@ -3,7 +3,7 @@ package elasticsearch
 import (
 	"context"
 	"encoding/json"
-	mapItemES "github.com/HomesNZ/buyer-demand/internal/model"
+	entity "github.com/HomesNZ/buyer-demand/internal/entity"
 	"github.com/pkg/errors"
 
 	"github.com/HomesNZ/elastic"
@@ -16,7 +16,7 @@ var (
 )
 
 type Client interface {
-	QueryAll(ctx context.Context) (mapItemES.MapItemESs, error)
+	BySuburbID(ctx context.Context, suburbID int) (entity.MapItemESs, error)
 }
 
 type client struct {
@@ -24,15 +24,15 @@ type client struct {
 	conn *elastic.Client
 }
 
-func (es *client) QueryAll(ctx context.Context) (mapItemES.MapItemESs, error) {
-	query := elastic.NewBoolQuery().Filter(
-		elastic.NewExistsQuery("property_id"),
-	)
-	search := es.conn.
-		Search().
-		Index(AliasName).
-		Type("map_item").
-		Query(query)
+func (es *client) BySuburbID(ctx context.Context, suburbID int) (entity.MapItemESs, error) {
+	query := elastic.NewBoolQuery().Must(
+		elastic.NewNestedQuery(
+			"nested_address",
+			elastic.NewBoolQuery().Must(
+				elastic.NewMatchQuery("nested_address.suburb_id", suburbID))))
+
+	// TODO Size From
+	search := es.conn.Search().Index(AliasName).Type("map_item").Query(query).Size(5000)
 
 	searchResult, err := search.Do(ctx)
 	if err != nil {
@@ -42,10 +42,10 @@ func (es *client) QueryAll(ctx context.Context) (mapItemES.MapItemESs, error) {
 	return parseToMapItem(searchResult.Hits.Hits)
 }
 
-func parseToMapItem(hits []*elastic.SearchHit) (mapItemES.MapItemESs, error) {
-	results := mapItemES.MapItemESs{}
+func parseToMapItem(hits []*elastic.SearchHit) (entity.MapItemESs, error) {
+	results := entity.MapItemESs{}
 	for _, v := range hits {
-		r := mapItemES.MapItemES{}
+		r := entity.MapItemES{}
 		err := json.Unmarshal(*v.Source, &r)
 		if err != nil {
 			return nil, errors.Wrap(err, "Unmarshal")
