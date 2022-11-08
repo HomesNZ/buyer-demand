@@ -20,8 +20,9 @@ var _ = Describe("BuyerDemand", func() {
 	//var buyerDemandRepo *mockBuyerDemand.MockRepo
 
 	now := time.Now()
-	thisMonth := time.Date(now.Year(), now.Month(), 1, 1, 2, 3, 4, now.Location())
-	lastMonth := time.Date(now.Year(), now.Month()-1, 1, 1, 2, 3, 4, now.Location())
+	today := time.Date(now.Year(), now.Month(), now.Day(), 1, 2, 3, 4, now.Location())
+	yesterday := time.Date(now.Year(), now.Month(), now.Day()-1, 1, 2, 3, 4, now.Location())
+	theDayBeforeYesterday := time.Date(now.Year(), now.Month(), now.Day()-2, 1, 2, 3, 4, now.Location())
 	previousYear := time.Date(1990, now.Month(), 1, 1, 2, 3, 4, now.Location())
 
 	address1020 := entity.Address{
@@ -128,8 +129,8 @@ var _ = Describe("BuyerDemand", func() {
 			Price:               null.FloatFrom(800000),
 			ListingId:           null.String{},
 			PropertyState:       null.IntFrom(2),
-			LatestListingDate:   null.TimeFrom(thisMonth),
-			LatestSoldDate:      null.TimeFrom(now),
+			LatestListingDate:   null.TimeFrom(theDayBeforeYesterday),
+			LatestSoldDate:      null.TimeFrom(today),
 		},
 		// recent unlisted: null Bedrooms, 3 Bathrooms, 1020, RR1234, 900000
 		entity.MapItemES{
@@ -140,8 +141,8 @@ var _ = Describe("BuyerDemand", func() {
 			Price:               null.FloatFrom(830000),
 			ListingId:           null.String{},
 			PropertyState:       null.IntFrom(2),
-			LatestListingDate:   null.TimeFrom(lastMonth),
-			LatestSoldDate:      null.TimeFrom(now),
+			LatestListingDate:   null.TimeFrom(theDayBeforeYesterday),
+			LatestSoldDate:      null.TimeFrom(yesterday),
 		},
 		// recent unlisted: null Bedrooms, 3 Bathrooms, 1020, RR1234, 900000
 		entity.MapItemES{
@@ -164,8 +165,8 @@ var _ = Describe("BuyerDemand", func() {
 			Price:               null.FloatFrom(730000),
 			ListingId:           null.String{},
 			PropertyState:       null.IntFrom(2),
-			LatestListingDate:   null.TimeFrom(lastMonth),
-			LatestSoldDate:      null.TimeFrom(now),
+			LatestListingDate:   null.TimeFrom(yesterday),
+			LatestSoldDate:      null.TimeFrom(today),
 		},
 	}
 
@@ -175,7 +176,7 @@ var _ = Describe("BuyerDemand", func() {
 			NumBathrooms:           null.IntFrom(3),
 			SuburbID:               null.IntFrom(1020),
 			PropertyType:           null.StringFrom("RR"),
-			MedianDaysToSell:       null.IntFrom(21),
+			MedianDaysToSell:       null.IntFrom(1),
 			MedianSalePrice:        650000,
 			NumOfForSaleProperties: 1,
 		},
@@ -211,7 +212,7 @@ var _ = Describe("BuyerDemand", func() {
 			NumBathrooms:           null.IntFrom(3),
 			SuburbID:               null.IntFrom(1020),
 			PropertyType:           null.StringFrom("RR"),
-			MedianDaysToSell:       null.IntFrom(37),
+			MedianDaysToSell:       null.IntFrom(1),
 			MedianSalePrice:        750000,
 			NumOfForSaleProperties: 2,
 		},
