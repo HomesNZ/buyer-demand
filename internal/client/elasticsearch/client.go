@@ -10,9 +10,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var (
+const (
 	// AliasName is the name of the ES alias which points to the index this schema resides in
-	AliasName = "map_items"
+	AliasName         = "map_items"
+	bySuburbBatchSize = 1000
 )
 
 type Client interface {
@@ -31,19 +32,29 @@ func (es *client) BySuburbID(ctx context.Context, suburbID int) (entity.MapItemE
 			elastic.NewBoolQuery().Must(
 				elastic.NewMatchQuery("nested_address.suburb_id", suburbID))))
 
-	// TODO Size From
-	search := es.conn.Search().Index(AliasName).Type("map_item").Query(query).Size(10000)
+	return es.doSearch(ctx, query, 0, entity.MapItemESs{})
+}
 
+func (es *client) doSearch(ctx context.Context, query elastic.Query, from int, results entity.MapItemESs) (entity.MapItemESs, error) {
+	search := es.conn.Search().Index(AliasName).Type("map_item").Query(query).Size(bySuburbBatchSize).From(from)
 	searchResult, err := search.Do(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "Do")
 	}
 
-	return parseToMapItem(searchResult.Hits.Hits)
+	results, err = parseToMapItem(results, searchResult.Hits.Hits)
+	if err != nil {
+		return nil, errors.Wrap(err, "parseToMapItem")
+	}
+
+	if searchResult.TotalHits() > int64(from+len(searchResult.Hits.Hits)) {
+		return es.doSearch(ctx, query, from+len(searchResult.Hits.Hits), results)
+	}
+
+	return results, nil
 }
 
-func parseToMapItem(hits []*elastic.SearchHit) (entity.MapItemESs, error) {
-	results := entity.MapItemESs{}
+func parseToMapItem(results entity.MapItemESs, hits []*elastic.SearchHit) (entity.MapItemESs, error) {
 	for _, v := range hits {
 		r := entity.MapItemES{}
 		err := json.Unmarshal(*v.Source, &r)

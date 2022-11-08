@@ -8,7 +8,7 @@ import (
 	"sync"
 )
 
-const suburbChunkSize = 100
+const suburbChunkSize = 20
 
 func (s service) DailyBuyerDemandTableRefresh(ctx context.Context) error {
 	// Query all suburb ids from db
