@@ -32,7 +32,7 @@ func (es *client) BySuburbID(ctx context.Context, suburbID int) (entity.MapItemE
 				elastic.NewMatchQuery("nested_address.suburb_id", suburbID))))
 
 	// TODO Size From
-	search := es.conn.Search().Index(AliasName).Type("map_item").Query(query).Size(5000)
+	search := es.conn.Search().Index(AliasName).Type("map_item").Query(query).Size(10000)
 
 	searchResult, err := search.Do(ctx)
 	if err != nil {

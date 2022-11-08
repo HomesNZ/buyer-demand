@@ -72,7 +72,7 @@ func (items MapItemESs) GenerateBuyerDemands() BuyerDemands {
 
 func (items MapItemESs) prepareData() (map[buyerDemandKey]MapItemESs, map[buyerDemandKey][]int64) {
 	now := time.Now()
-	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	today := toDate(now)
 	lastNinetyDays := today.AddDate(0, 0, -90)
 
 	currentListingMap := map[buyerDemandKey]MapItemESs{}
@@ -93,22 +93,20 @@ func (items MapItemESs) prepareData() (map[buyerDemandKey]MapItemESs, map[buyerD
 		}
 
 		if item.PropertyState.Valid && item.PropertyState.ValueOrZero() == 2 &&
-			item.LatestListingDate.Valid && item.LatestSoldDate.Valid &&
-			item.LatestSoldDate.ValueOrZero().After(item.LatestListingDate.ValueOrZero()) &&
-			item.LatestListingDate.Time.After(lastNinetyDays) {
+			item.LatestListingDate.Valid && item.LatestSoldDate.Valid {
+			listingDate := toDate(item.LatestListingDate.ValueOrZero())
+			listingSoldDate := toDate(item.LatestSoldDate.ValueOrZero())
+
+			if listingDate.After(listingSoldDate) || lastNinetyDays.After(listingDate) {
+				continue
+			}
 
 			daysToSell, ok := daysToSellMap[key]
 			if !ok {
 				daysToSell = []int64{}
 			}
 
-			listingSoldTime := item.LatestSoldDate.ValueOrZero()
-			listingSoldDate := time.Date(listingSoldTime.Year(), listingSoldTime.Month(), listingSoldTime.Day(), 0, 0, 0, 0, listingSoldTime.Location())
-
-			listingTime := item.LatestListingDate.ValueOrZero()
-			listingDate := time.Date(listingTime.Year(), listingTime.Month(), listingTime.Day(), 0, 0, 0, 0, listingTime.Location())
 			days := int64(math.Round(listingSoldDate.Sub(listingDate).Hours() / 24))
-
 			daysToSell = append(daysToSell, days)
 			daysToSellMap[key] = daysToSell
 
@@ -117,6 +115,10 @@ func (items MapItemESs) prepareData() (map[buyerDemandKey]MapItemESs, map[buyerD
 	}
 
 	return currentListingMap, daysToSellMap
+}
+
+func toDate(t time.Time) time.Time {
+	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC)
 }
 
 func calculateMedianDaysToSell(daysToSell []int64) null.Int {
