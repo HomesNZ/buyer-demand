@@ -1,5 +1,5 @@
 # Start from base image with known SSL certs
-FROM alpine
+FROM alpine:3.14
 WORKDIR /app
 
 # Copy statically compiled binary

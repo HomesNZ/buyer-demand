@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"github.com/HomesNZ/buyer-demand/internal/entity"
 	"github.com/pkg/errors"
-	"golang.org/x/sync/errgroup"
+	"sync"
 )
 
-const suburbChunkSize = 5
+const suburbChunkSize = 100
 
 func (s service) DailyBuyerDemandTableRefresh(ctx context.Context) error {
 	// Query all suburb ids from db
@@ -18,63 +18,41 @@ func (s service) DailyBuyerDemandTableRefresh(ctx context.Context) error {
 	}
 
 	// Query all properties/listings by suburb id from ES
-	var buyerDemandsChan chan entity.BuyerDemands
-	suburbIDChunks := chunkSlice(suburbIDs, suburbChunkSize)
-	for _, chunk := range suburbIDChunks {
-		g, c := errgroup.WithContext(ctx)
-		for _, id := range chunk {
-			id := id
-			if id == 0 {
-				continue
+	var buyerDemands entity.BuyerDemands
+
+	m := sync.Mutex{}
+	wg := sync.WaitGroup{}
+	for i, suburbID := range suburbIDs {
+		if suburbID == 0 {
+			continue
+		}
+		wg.Add(1)
+
+		go func(id int) {
+			defer wg.Done()
+			// Calculate buyer demand, aggregate by num_bedrooms, num_bathrooms and property_sub_category
+			bds, err := s.calculateBuyerDemands(ctx, id)
+			if err == nil && bds != nil {
+				m.Lock()
+				buyerDemands = append(buyerDemands, bds...)
+				m.Unlock()
 			}
-			g.Go(func() error {
-				// Calculate buyer demand, aggregate by num_bedrooms, num_bathrooms and property_sub_category
-				bds, err := s.calculateBuyerDemands(c, id)
-				if err != nil {
-					return errors.Wrap(err, "calculateBuyerDemands")
-				}
-				if bds != nil {
-					buyerDemandsChan <- bds
-				}
-				return nil
-			})
-		}
+		}(suburbID)
 
-		if err := g.Wait(); err != nil {
-			return errors.Wrap(err, "g.Wait()")
+		if (i+1)%suburbChunkSize == 0 {
+			wg.Wait()
 		}
 	}
+	wg.Wait()
 
-	var buyerDemandsResult entity.BuyerDemands
-	for bds := range buyerDemandsChan {
-		buyerDemandsResult = append(buyerDemandsResult, bds...)
-	}
 	// Populate to DB
-	err = s.repos.BuyerDemand().Populate(ctx, buyerDemandsResult)
+	err = s.repos.BuyerDemand().Populate(ctx, buyerDemands)
 	if err != nil {
 		return errors.Wrap(err, "BuyerDemand().Populate")
 	}
 
 	s.logger.Info("DailyBuyerDemandTableRefresh is done")
 	return nil
-}
-
-func chunkSlice(slice []int, chunkSize int) [][]int {
-	var chunks [][]int
-	for {
-		if len(slice) == 0 {
-			break
-		}
-
-		if len(slice) < chunkSize {
-			chunkSize = len(slice)
-		}
-
-		chunks = append(chunks, slice[0:chunkSize])
-		slice = slice[chunkSize:]
-	}
-
-	return chunks
 }
 
 func (s service) calculateBuyerDemands(ctx context.Context, suburbID int) (entity.BuyerDemands, error) {

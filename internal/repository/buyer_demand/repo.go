@@ -22,14 +22,14 @@ type repo struct {
 	db *pgxpool.Pool
 }
 
-const deleteTodaysDataQuery = `
+const deleteTodayDataQuery = `
 	DELETE FROM homes_data_export.buyer_demand
 	WHERE created_at > CURRENT_DATE;
 `
 
 const populateQuery = `
 	INSERT INTO homes_data_export.buyer_demand (
-		suburb_id, 
+	    suburb_id, 
 	    num_bedrooms, 
 	    num_bathrooms, 
 	    property_type, 
@@ -53,7 +53,7 @@ func (r *repo) Populate(ctx context.Context, buyerDemands entity.BuyerDemands) e
 		return errors.Wrap(err, "db.Begin")
 	}
 
-	_, err = tx.Exec(ctx, deleteTodaysDataQuery)
+	_, err = tx.Exec(ctx, deleteTodayDataQuery)
 	if err != nil {
 		return errors.Wrap(err, "tx.Exec delete")
 	}
