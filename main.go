@@ -11,6 +11,8 @@ import (
 	"github.com/HomesNZ/go-common/logger"
 	"github.com/HomesNZ/go-common/newrelic"
 	"github.com/HomesNZ/go-common/version"
+	"github.com/HomesNZ/go-secret/auth"
+	"github.com/HomesNZ/go-secret/auth/allow"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 	"net/http"
@@ -58,8 +60,24 @@ func main() {
 		return
 	}
 
+	a, err := auth.New(
+		auth.Logger(log),
+		auth.JWKS(env.MustGetString("AUTH0_JWKS_URL")),
+		auth.ClientSecret(env.MustGetString("AUTH0_CLIENT_SECRET")),
+		auth.APISecret(env.MustGetString("AUTH0_API_SECRET")),
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	authorisation := &auth.Authorisation{
+		Authenticator: a,
+		Rules: auth.Rules{
+			"buyer.demand.stats": allow.Always{},
+		},
+	}
 	r := mux.NewRouter()
-	handler.Register(log, r, s)
+	handler.Register(log, r, authorisation, s)
 	addr := ":" + env.MustGetString("HTTP_PORT")
 	log.Info("Listening on ", addr)
 	logrus.Fatal(http.ListenAndServe(addr, r))
