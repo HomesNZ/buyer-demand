@@ -65,7 +65,6 @@ func main() {
 		auth.JWKS(env.MustGetString("AUTH0_JWKS_URL")),
 		auth.ClientSecret(env.MustGetString("AUTH0_CLIENT_SECRET")),
 		auth.APISecret(env.MustGetString("AUTH0_API_SECRET")),
-		auth.ServiceKey(env.MustGetString("AUTHORISE_KEY")),
 	)
 	if err != nil {
 		log.Fatal(err)
