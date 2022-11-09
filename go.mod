@@ -11,7 +11,6 @@ require (
 	github.com/HomesNZ/go-common/logger v0.0.0-20220803012308-ffd3f11c730a
 	github.com/HomesNZ/go-common/newrelic v0.0.0-20220803012308-ffd3f11c730a
 	github.com/HomesNZ/go-common/version v0.0.0-20220803012308-ffd3f11c730a
-	github.com/HomesNZ/go-secret v0.0.0-20220906225022-de22ca1e851f
 	github.com/NYTimes/gziphandler v1.1.1
 	github.com/go-ozzo/ozzo-validation v3.6.0+incompatible
 	github.com/golang/mock v1.6.0
@@ -25,7 +24,6 @@ require (
 
 require (
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d // indirect
-	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
 	github.com/felixge/httpsnoop v1.0.1 // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/go-ozzo/ozzo-validation/v4 v4.3.0 // indirect
@@ -37,7 +35,6 @@ require (
 	github.com/jackc/pgservicefile v0.0.0-20200714003250-2b9c44734f2b // indirect
 	github.com/jackc/pgtype v1.12.0 // indirect
 	github.com/jackc/puddle v1.3.0 // indirect
-	github.com/lestrrat-go/jwx v0.9.2 // indirect
 	github.com/nxadm/tail v1.4.8 // indirect
 	golang.org/x/crypto v0.0.0-20220722155217-630584e8d5aa // indirect
 	golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2 // indirect
