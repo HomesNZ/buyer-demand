@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"github.com/HomesNZ/buyer-demand/internal/api"
 	"github.com/HomesNZ/buyer-demand/internal/repository"
 
 	es "github.com/HomesNZ/buyer-demand/internal/client/elasticsearch"
@@ -19,11 +20,17 @@ func New(log *logrus.Entry, repos repository.Repositories, esClient es.Client) (
 }
 
 type Service interface {
+	Health() error
 	DailyBuyerDemandTableRefresh(ctx context.Context) error
+	BuyerDemandLatestStatsByPropertyID(ctx context.Context, req *api.BuyerDemandLatestStatsByPropertyIDRequest) (*api.BuyerDemandStatsResponse, error)
 }
 
 type service struct {
 	repos    repository.Repositories
 	esClient es.Client
 	logger   *logrus.Entry
+}
+
+func (s service) Health() error {
+	return nil
 }
