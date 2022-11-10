@@ -18,6 +18,7 @@ const (
 
 type Client interface {
 	BySuburbID(ctx context.Context, suburbID int) (entity.MapItemESs, error)
+	ByPropertyID(ctx context.Context, propertyID string) (*entity.MapItemES, error)
 }
 
 type client struct {
@@ -65,4 +66,25 @@ func parseToMapItem(results entity.MapItemESs, hits []*elastic.SearchHit) (entit
 		results = append(results, r)
 	}
 	return results, nil
+}
+
+func (es *client) ByPropertyID(ctx context.Context, propertyID string) (*entity.MapItemES, error) {
+	query := elastic.NewBoolQuery().Must(elastic.NewMatchQuery("property_id", propertyID))
+	search := es.conn.Search().Index(AliasName).Type("map_item").Query(query).Size(1)
+	searchResult, err := search.Do(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "Do")
+	}
+
+	if searchResult.TotalHits() < 1 {
+		return nil, nil
+	}
+
+	results := entity.MapItemESs{}
+	results, err = parseToMapItem(results, searchResult.Hits.Hits)
+	if err != nil {
+		return nil, errors.Wrap(err, "parseToMapItem")
+	}
+
+	return &results[0], nil
 }

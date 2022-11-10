@@ -4,11 +4,9 @@ import (
 	"gopkg.in/guregu/null.v3"
 )
 
-type BuyerDemandStatsRequest struct {
-	SuburbID     null.Int    `schema:"suburb_id"`
-	NumBedrooms  null.Int    `schema:"num_bedrooms"`
-	NumBathrooms null.Int    `schema:"num_bathrooms"`
-	PropertyType null.String `schema:"property_type"`
+type BuyerDemandLatestStatsByPropertyIDRequest struct {
+	PropertyID string
+	UserID     int
 }
 
 type BuyerDemandStatsResponse struct {

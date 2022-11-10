@@ -22,7 +22,7 @@ func New(log *logrus.Entry, repos repository.Repositories, esClient es.Client) (
 type Service interface {
 	Health() error
 	DailyBuyerDemandTableRefresh(ctx context.Context) error
-	BuyerDemandLatestStats(ctx context.Context, req *api.BuyerDemandStatsRequest) (*api.BuyerDemandStatsResponse, error)
+	BuyerDemandLatestStatsByPropertyID(ctx context.Context, req *api.BuyerDemandLatestStatsByPropertyIDRequest) (*api.BuyerDemandStatsResponse, error)
 }
 
 type service struct {

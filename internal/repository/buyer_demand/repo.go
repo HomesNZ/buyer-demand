@@ -100,39 +100,51 @@ const latestStatsQuery = `
 	LIMIT 1;
 `
 
-func generateWhereClause(suburbID, bedroom, bathroom null.Int, propertyType null.String) string {
+func generateWhereClause(suburbID, bedroom, bathroom null.Int, propertyType null.String) (string, []interface{}) {
 	var whereArray []string
+	var values []interface{}
+	index := 0
+
 	if !suburbID.IsZero() {
-		whereArray = append(whereArray, fmt.Sprintf("suburb_id = %d", suburbID.ValueOrZero()))
+		index++
+		whereArray = append(whereArray, fmt.Sprintf("suburb_id = $%d", index))
+		values = append(values, suburbID.ValueOrZero())
 	} else {
 		whereArray = append(whereArray, "suburb_id is null")
 	}
 
 	if !bedroom.IsZero() {
-		whereArray = append(whereArray, fmt.Sprintf("num_bedrooms = %d", bedroom.ValueOrZero()))
+		index++
+		whereArray = append(whereArray, fmt.Sprintf("num_bedrooms = $%d", index))
+		values = append(values, bedroom.ValueOrZero())
 	} else {
 		whereArray = append(whereArray, "num_bedrooms is null")
 	}
 
 	if !bathroom.IsZero() {
-		whereArray = append(whereArray, fmt.Sprintf("num_bathrooms = %d", bathroom.ValueOrZero()))
+		index++
+		whereArray = append(whereArray, fmt.Sprintf("num_bathrooms = $%d", index))
+		values = append(values, bathroom.ValueOrZero())
 	} else {
 		whereArray = append(whereArray, "num_bathrooms is null")
 	}
 
 	if !propertyType.IsZero() {
-		whereArray = append(whereArray, fmt.Sprintf("property_type = '%s'", propertyType.ValueOrZero()))
+		index++
+		whereArray = append(whereArray, fmt.Sprintf("property_type = $%d", index))
+		values = append(values, propertyType.ValueOrZero())
 	} else {
 		whereArray = append(whereArray, "property_type is null")
 	}
 
 	where := fmt.Sprintf(" OR (%s)", strings.Join(whereArray, " AND "))
-	return fmt.Sprintf(latestStatsQuery, where)
+	return fmt.Sprintf(latestStatsQuery, where), values
 }
 
 func (r *repo) LatestStats(ctx context.Context, suburbID, bedroom, bathroom null.Int, propertyType null.String) (*api.BuyerDemandStatsResponse, error) {
 	resp := api.BuyerDemandStatsResponse{}
-	row := r.db.QueryRow(ctx, generateWhereClause(suburbID, bedroom, bathroom, propertyType))
+	query, args := generateWhereClause(suburbID, bedroom, bathroom, propertyType)
+	row := r.db.QueryRow(ctx, query, args...)
 	err := row.Scan(
 		&resp.MedianDaysToSell,
 		&resp.MedianSalePrice,
