@@ -18,9 +18,8 @@ func (s service) DailyBuyerDemandTableRefresh(ctx context.Context) error {
 	}
 
 	// Query all properties/listings by suburb id from ES
-	var buyerDemands entity.BuyerDemands
+	buyerDemands := make(chan entity.BuyerDemands, suburbChunkSize)
 
-	m := sync.Mutex{}
 	wg := sync.WaitGroup{}
 	for i, suburbID := range suburbIDs {
 		if suburbID == 0 {
@@ -33,22 +32,33 @@ func (s service) DailyBuyerDemandTableRefresh(ctx context.Context) error {
 			// Calculate buyer demand, aggregate by num_bedrooms, num_bathrooms and property_sub_category
 			bds, err := s.calculateBuyerDemands(ctx, id)
 			if err == nil && bds != nil {
-				m.Lock()
-				buyerDemands = append(buyerDemands, bds...)
-				m.Unlock()
+				buyerDemands <- bds
 			}
 		}(suburbID)
 
 		if (i+1)%suburbChunkSize == 0 {
 			wg.Wait()
+			close(buyerDemands)
+
+			// Populate to DB
+			for bds := range buyerDemands {
+				err = s.repos.BuyerDemand().Populate(ctx, bds)
+				if err != nil {
+					return errors.Wrap(err, "BuyerDemand().Populate")
+				}
+			}
+			buyerDemands = make(chan entity.BuyerDemands, suburbChunkSize)
 		}
 	}
 	wg.Wait()
+	close(buyerDemands)
 
 	// Populate to DB
-	err = s.repos.BuyerDemand().Populate(ctx, buyerDemands)
-	if err != nil {
-		return errors.Wrap(err, "BuyerDemand().Populate")
+	for bds := range buyerDemands {
+		err = s.repos.BuyerDemand().Populate(ctx, bds)
+		if err != nil {
+			return errors.Wrap(err, "BuyerDemand().Populate")
+		}
 	}
 
 	s.logger.Info("DailyBuyerDemandTableRefresh is done")

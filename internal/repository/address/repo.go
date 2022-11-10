@@ -22,9 +22,8 @@ type repo struct {
 }
 
 const allSuburbIDsQuery = `
-	SELECT DISTINCT suburb_id
-	FROM homes_data_export.addresses
-	WHERE suburb_id is not null
+	SELECT id FROM homes_external_data.nz_localities
+	WHERE type = 'SUBURB' OR type = 'LOCALITY';
 `
 
 func (r *repo) AllSuburbIDs(ctx context.Context) ([]int, error) {
