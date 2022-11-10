@@ -19,7 +19,7 @@ func (s service) DailyBuyerDemandTableRefresh(ctx context.Context) error {
 
 	// Query all properties/listings by suburb id from ES
 	buyerDemands := make(chan entity.BuyerDemands, suburbChunkSize)
-
+	needToDeleteTodayData := true
 	wg := sync.WaitGroup{}
 	for i, suburbID := range suburbIDs {
 		if suburbID == 0 {
@@ -38,24 +38,23 @@ func (s service) DailyBuyerDemandTableRefresh(ctx context.Context) error {
 
 		if (i+1)%suburbChunkSize == 0 {
 			wg.Wait()
-			close(buyerDemands)
 
 			// Populate to DB
-			for bds := range buyerDemands {
-				err = s.repos.BuyerDemand().Populate(ctx, bds)
+			for len(buyerDemands) > 0 {
+				err = s.repos.BuyerDemand().Populate(ctx, <-buyerDemands, needToDeleteTodayData)
 				if err != nil {
 					return errors.Wrap(err, "BuyerDemand().Populate")
 				}
 			}
-			buyerDemands = make(chan entity.BuyerDemands, suburbChunkSize)
+			needToDeleteTodayData = false
 		}
 	}
 	wg.Wait()
 	close(buyerDemands)
 
 	// Populate to DB
-	for bds := range buyerDemands {
-		err = s.repos.BuyerDemand().Populate(ctx, bds)
+	for len(buyerDemands) > 0 {
+		err = s.repos.BuyerDemand().Populate(ctx, <-buyerDemands, needToDeleteTodayData)
 		if err != nil {
 			return errors.Wrap(err, "BuyerDemand().Populate")
 		}

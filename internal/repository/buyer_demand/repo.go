@@ -8,7 +8,7 @@ import (
 )
 
 type Repo interface {
-	Populate(ctx context.Context, buyerDemands entity.BuyerDemands) error
+	Populate(ctx context.Context, buyerDemands entity.BuyerDemands, needToDeleteTodayData bool) error
 }
 
 func New(db *pgxpool.Pool) (Repo, error) {
@@ -43,7 +43,7 @@ const populateQuery = `
 	);
 `
 
-func (r *repo) Populate(ctx context.Context, buyerDemands entity.BuyerDemands) error {
+func (r *repo) Populate(ctx context.Context, buyerDemands entity.BuyerDemands, needToDeleteTodayData bool) error {
 	tx, err := r.db.Begin(ctx)
 	if err != nil {
 		err := tx.Rollback(ctx)
@@ -53,9 +53,11 @@ func (r *repo) Populate(ctx context.Context, buyerDemands entity.BuyerDemands) e
 		return errors.Wrap(err, "db.Begin")
 	}
 
-	_, err = tx.Exec(ctx, deleteTodayDataQuery)
-	if err != nil {
-		return errors.Wrap(err, "tx.Exec delete")
+	if needToDeleteTodayData {
+		_, err = tx.Exec(ctx, deleteTodayDataQuery)
+		if err != nil {
+			return errors.Wrap(err, "tx.Exec delete")
+		}
 	}
 
 	for _, bd := range buyerDemands {
