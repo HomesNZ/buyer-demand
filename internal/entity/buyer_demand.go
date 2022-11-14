@@ -14,8 +14,9 @@ type BuyerDemand struct {
 	SuburbID               null.Int    `json:"suburb_id"`
 	PropertyType           null.String `json:"property_type"`
 	MedianDaysToSell       null.Int    `json:"median_days_to_sell"`
-	MedianSalePrice        float64     `json:"median_sale_price"`
-	NumOfForSaleProperties int         `json:"num_for_sale_properties"`
+	MedianSalePrice        null.Float  `json:"median_sale_price"`
+	NumOfForSaleProperties null.Int    `json:"num_for_sale_properties"`
+	CreatedAt              null.Time   `json:"created_at"`
 }
 
 type BuyerDemands []BuyerDemand

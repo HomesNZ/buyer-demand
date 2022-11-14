@@ -1,6 +1,7 @@
 package util
 
 import (
+	"github.com/pkg/errors"
 	"golang.org/x/exp/constraints"
 	"golang.org/x/exp/slices"
 )
@@ -26,4 +27,12 @@ func Median[T Number](data []T) float64 {
 	}
 
 	return median
+}
+
+func IncreasedPercent[T Number](a T, b T) (float64, error) {
+	if a == 0 {
+		return 0, errors.New("The old data can not be zero")
+	}
+
+	return float64((b-a)/a) * 100, nil
 }

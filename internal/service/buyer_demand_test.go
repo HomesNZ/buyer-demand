@@ -177,8 +177,8 @@ var _ = Describe("BuyerDemand", func() {
 			SuburbID:               null.IntFrom(1020),
 			PropertyType:           null.StringFrom("RR"),
 			MedianDaysToSell:       null.IntFrom(1),
-			MedianSalePrice:        650000,
-			NumOfForSaleProperties: 1,
+			MedianSalePrice:        null.FloatFrom(650000),
+			NumOfForSaleProperties: null.IntFrom(1),
 		},
 		entity.BuyerDemand{
 			NumBedrooms:            null.IntFrom(4),
@@ -186,8 +186,8 @@ var _ = Describe("BuyerDemand", func() {
 			SuburbID:               null.IntFrom(1020),
 			PropertyType:           null.StringFrom("RR"),
 			MedianDaysToSell:       null.Int{},
-			MedianSalePrice:        850000,
-			NumOfForSaleProperties: 1,
+			MedianSalePrice:        null.FloatFrom(850000),
+			NumOfForSaleProperties: null.IntFrom(1),
 		},
 		entity.BuyerDemand{
 			NumBedrooms:            null.IntFrom(4),
@@ -195,8 +195,8 @@ var _ = Describe("BuyerDemand", func() {
 			SuburbID:               null.Int{},
 			PropertyType:           null.StringFrom("RR"),
 			MedianDaysToSell:       null.Int{},
-			MedianSalePrice:        725000,
-			NumOfForSaleProperties: 1,
+			MedianSalePrice:        null.FloatFrom(725000),
+			NumOfForSaleProperties: null.IntFrom(1),
 		},
 		entity.BuyerDemand{
 			NumBedrooms:            null.IntFrom(4),
@@ -204,8 +204,8 @@ var _ = Describe("BuyerDemand", func() {
 			SuburbID:               null.IntFrom(1020),
 			PropertyType:           null.String{},
 			MedianDaysToSell:       null.Int{},
-			MedianSalePrice:        750000,
-			NumOfForSaleProperties: 1,
+			MedianSalePrice:        null.FloatFrom(750000),
+			NumOfForSaleProperties: null.IntFrom(1),
 		},
 		entity.BuyerDemand{
 			NumBedrooms:            null.IntFrom(4),
@@ -213,8 +213,8 @@ var _ = Describe("BuyerDemand", func() {
 			SuburbID:               null.IntFrom(1020),
 			PropertyType:           null.StringFrom("RR"),
 			MedianDaysToSell:       null.IntFrom(1),
-			MedianSalePrice:        750000,
-			NumOfForSaleProperties: 2,
+			MedianSalePrice:        null.FloatFrom(750000),
+			NumOfForSaleProperties: null.IntFrom(2),
 		},
 		entity.BuyerDemand{
 			NumBedrooms:            null.IntFrom(4),
@@ -222,8 +222,8 @@ var _ = Describe("BuyerDemand", func() {
 			SuburbID:               null.IntFrom(1020),
 			PropertyType:           null.StringFrom("RP"),
 			MedianDaysToSell:       null.Int{},
-			MedianSalePrice:        400000,
-			NumOfForSaleProperties: 2,
+			MedianSalePrice:        null.FloatFrom(400000),
+			NumOfForSaleProperties: null.IntFrom(2),
 		},
 	}
 

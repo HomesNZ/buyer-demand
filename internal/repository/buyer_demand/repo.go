@@ -3,7 +3,6 @@ package address
 import (
 	"context"
 	"fmt"
-	"github.com/HomesNZ/buyer-demand/internal/api"
 	"github.com/HomesNZ/buyer-demand/internal/entity"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -14,7 +13,7 @@ import (
 
 type Repo interface {
 	Populate(ctx context.Context, buyerDemands entity.BuyerDemands) error
-	LatestStats(ctx context.Context, suburbID, bedroom, bathroom null.Int, propertyType null.String) (*api.BuyerDemandStatsResponse, error)
+	LatestStats(ctx context.Context, suburbID, bedroom, bathroom null.Int, propertyType null.String) (entity.BuyerDemands, error)
 }
 
 func New(db *pgxpool.Pool) (Repo, error) {
@@ -97,7 +96,7 @@ const latestStatsQuery = `
 	FROM homes_data_export.buyer_demand
 	WHERE FALSE %s
 	ORDER BY created_at DESC
-	LIMIT 1;
+	LIMIT 2;
 `
 
 func generateWhereClause(suburbID, bedroom, bathroom null.Int, propertyType null.String) (string, []interface{}) {
@@ -141,18 +140,31 @@ func generateWhereClause(suburbID, bedroom, bathroom null.Int, propertyType null
 	return fmt.Sprintf(latestStatsQuery, where), values
 }
 
-func (r *repo) LatestStats(ctx context.Context, suburbID, bedroom, bathroom null.Int, propertyType null.String) (*api.BuyerDemandStatsResponse, error) {
-	resp := api.BuyerDemandStatsResponse{}
+func (r *repo) LatestStats(ctx context.Context, suburbID, bedroom, bathroom null.Int, propertyType null.String) (entity.BuyerDemands, error) {
+	resp := entity.BuyerDemands{}
 	query, args := generateWhereClause(suburbID, bedroom, bathroom, propertyType)
-	row := r.db.QueryRow(ctx, query, args...)
-	err := row.Scan(
-		&resp.MedianDaysToSell,
-		&resp.MedianSalePrice,
-		&resp.NumOfForSaleProperties,
-		&resp.CreatedAt,
-	)
+
+	rows, err := r.db.Query(ctx, query, args...)
 	if err == pgx.ErrNoRows {
-		err = nil
+		return nil, nil
 	}
-	return &resp, err
+	if err != nil {
+		return nil, errors.Wrap(err, "db.Query")
+	}
+
+	defer rows.Close()
+	for rows.Next() {
+		v := entity.BuyerDemand{}
+		err := rows.Scan(
+			&v.MedianDaysToSell,
+			&v.MedianSalePrice,
+			&v.NumOfForSaleProperties,
+			&v.CreatedAt,
+		)
+		if err != nil {
+			return nil, errors.Wrap(err, "rows.Next()")
+		}
+		resp = append(resp, v)
+	}
+	return resp, nil
 }

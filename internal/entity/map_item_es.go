@@ -61,8 +61,8 @@ func (items MapItemESs) GenerateBuyerDemands() BuyerDemands {
 			medianDaysToSell = calculateMedianDaysToSell(daysToSell)
 		}
 		bd.MedianDaysToSell = medianDaysToSell
-		bd.MedianSalePrice = currentListings.calculateMedianSalePrice()
-		bd.NumOfForSaleProperties = currentListings.calculateNumOfForSaleProperties()
+		bd.MedianSalePrice = null.FloatFrom(currentListings.calculateMedianSalePrice())
+		bd.NumOfForSaleProperties = null.IntFrom(int64(currentListings.calculateNumOfForSaleProperties()))
 
 		result = append(result, bd)
 	}
