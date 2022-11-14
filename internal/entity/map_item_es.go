@@ -81,33 +81,21 @@ func (items MapItemESs) prepareData() (map[buyerDemandKey]MapItemESs, map[buyerD
 	for _, item := range items {
 		key := item.getKey()
 		if item.ListingId.Valid {
-			currentListings, ok := currentListingMap[key]
-			if !ok {
-				currentListings = MapItemESs{}
-			}
-
+			currentListings := currentListingMap[key]
 			currentListings = append(currentListings, item)
 			currentListingMap[key] = currentListings
 
 			continue
 		}
 
-		if item.PropertyState.Valid && item.PropertyState.ValueOrZero() == 2 &&
-			item.LatestListingDate.Valid && item.LatestSoldDate.Valid {
-			listingDate := toDate(item.LatestListingDate.ValueOrZero())
-			listingSoldDate := toDate(item.LatestSoldDate.ValueOrZero())
-
-			if listingDate.After(listingSoldDate) || lastNinetyDays.After(listingDate) {
+		if item.isSold() {
+			days := item.calculateDaysToSell(lastNinetyDays)
+			if days.IsZero() {
 				continue
 			}
 
-			daysToSell, ok := daysToSellMap[key]
-			if !ok {
-				daysToSell = []int64{}
-			}
-
-			days := int64(math.Round(listingSoldDate.Sub(listingDate).Hours() / 24))
-			daysToSell = append(daysToSell, days)
+			daysToSell := daysToSellMap[key]
+			daysToSell = append(daysToSell, days.ValueOrZero())
 			daysToSellMap[key] = daysToSell
 
 			continue
@@ -115,6 +103,26 @@ func (items MapItemESs) prepareData() (map[buyerDemandKey]MapItemESs, map[buyerD
 	}
 
 	return currentListingMap, daysToSellMap
+}
+
+func (i *MapItemES) calculateDaysToSell(lastNinetyDays time.Time) null.Int {
+	if i.LatestListingDate.IsZero() || i.LatestSoldDate.IsZero() {
+		return null.Int{}
+	}
+
+	listingDate := toDate(i.LatestListingDate.ValueOrZero())
+	listingSoldDate := toDate(i.LatestSoldDate.ValueOrZero())
+
+	if listingDate.After(listingSoldDate) || lastNinetyDays.After(listingDate) {
+		return null.Int{}
+	}
+
+	days := int64(math.Round(listingSoldDate.Sub(listingDate).Hours() / 24))
+	return null.IntFrom(days)
+}
+
+func (i *MapItemES) isSold() bool {
+	return i.PropertyState.Valid && i.PropertyState.ValueOrZero() == 2
 }
 
 func toDate(t time.Time) time.Time {
