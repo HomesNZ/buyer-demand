@@ -4,6 +4,7 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/exp/constraints"
 	"golang.org/x/exp/slices"
+	"math"
 )
 
 type Number interface {
@@ -29,10 +30,13 @@ func Median[T Number](data []T) float64 {
 	return median
 }
 
-func IncreasedPercent[T Number](a T, b T) (float64, error) {
+func IncreasedPercent[T Number](a T, b T, decimal int) (float64, error) {
 	if a == 0 {
 		return 0, errors.New("The old data can not be zero")
 	}
 
-	return float64((b-a)/a) * 100, nil
+	v := float64((b-a)/a) * 100
+	base := math.Pow10(decimal)
+
+	return math.Round(v*base) / base, nil
 }

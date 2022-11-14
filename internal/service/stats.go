@@ -6,17 +6,20 @@ import (
 	"github.com/HomesNZ/buyer-demand/internal/api"
 	"github.com/HomesNZ/buyer-demand/internal/entity"
 	"github.com/HomesNZ/buyer-demand/internal/util"
+	"github.com/HomesNZ/go-secret/auth"
 	"github.com/pkg/errors"
 	"gopkg.in/guregu/null.v3"
 )
 
 func (s service) BuyerDemandLatestStatsByPropertyID(ctx context.Context, req *api.BuyerDemandLatestStatsByPropertyIDRequest) (*api.BuyerDemandStatsResponse, error) {
-	isOwner, err := s.repos.PropertyClaim().IsClaimedByUserID(ctx, req.PropertyID, req.UserID)
-	if err != nil {
-		return nil, errors.Wrap(err, "PropertyClaim.IsClaimedByUserID")
-	}
-	if !isOwner {
-		return nil, util.Unauthorized(fmt.Sprintf("The property is not claimed by %d", req.UserID))
+	if !req.User.HasRole(auth.RoleAdmin) {
+		isOwner, err := s.repos.PropertyClaim().IsClaimedByUserID(ctx, req.PropertyID, req.User.UserID)
+		if err != nil {
+			return nil, errors.Wrap(err, "PropertyClaim.IsClaimedByUserID")
+		}
+		if !isOwner {
+			return nil, util.Unauthorized(fmt.Sprintf("The property is not claimed by %d", req.User.UserID))
+		}
 	}
 
 	property, err := s.esClient.ByPropertyID(ctx, req.PropertyID)
@@ -58,21 +61,21 @@ func handlerBuyerDemands(stats *api.BuyerDemandStatsResponse, buyerDemands entit
 
 	if len(buyerDemands) >= 2 {
 		if buyerDemands[0].MedianDaysToSell.Valid && buyerDemands[1].MedianDaysToSell.Valid {
-			medianDaysToSellTrendPercent, err := util.IncreasedPercent(buyerDemands[0].MedianDaysToSell.ValueOrZero(), buyerDemands[1].MedianDaysToSell.ValueOrZero())
+			medianDaysToSellTrendPercent, err := util.IncreasedPercent(buyerDemands[0].MedianDaysToSell.ValueOrZero(), buyerDemands[1].MedianDaysToSell.ValueOrZero(), 1)
 			if err == nil {
 				stats.MedianDaysToSellTrendPercent = null.FloatFrom(medianDaysToSellTrendPercent)
 			}
 		}
 
 		if buyerDemands[0].MedianSalePrice.Valid && buyerDemands[1].MedianSalePrice.Valid {
-			medianSalePriceTrendPercent, err := util.IncreasedPercent(buyerDemands[0].MedianSalePrice.ValueOrZero(), buyerDemands[1].MedianSalePrice.ValueOrZero())
+			medianSalePriceTrendPercent, err := util.IncreasedPercent(buyerDemands[0].MedianSalePrice.ValueOrZero(), buyerDemands[1].MedianSalePrice.ValueOrZero(), 1)
 			if err == nil {
 				stats.MedianSalePriceTrendPercent = null.FloatFrom(medianSalePriceTrendPercent)
 			}
 		}
 
 		if buyerDemands[0].NumOfForSaleProperties.Valid && buyerDemands[1].NumOfForSaleProperties.Valid {
-			numOfForSalePropertiesTrendPercent, err := util.IncreasedPercent(buyerDemands[0].NumOfForSaleProperties.ValueOrZero(), buyerDemands[1].NumOfForSaleProperties.ValueOrZero())
+			numOfForSalePropertiesTrendPercent, err := util.IncreasedPercent(buyerDemands[0].NumOfForSaleProperties.ValueOrZero(), buyerDemands[1].NumOfForSaleProperties.ValueOrZero(), 1)
 			if err == nil {
 				stats.NumOfForSalePropertiesTrendPercent = null.FloatFrom(numOfForSalePropertiesTrendPercent)
 			}

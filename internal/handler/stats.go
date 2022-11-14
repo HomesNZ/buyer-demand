@@ -40,12 +40,12 @@ func decodeBuyerDemandLatestStatsByPropertyIDRequest(r *http.Request) (*api.Buye
 	propertyID := vars["property_id"]
 	req := api.BuyerDemandLatestStatsByPropertyIDRequest{
 		PropertyID: propertyID,
-		UserID:     u.UserID,
+		User:       u,
 	}
 
 	err = validation.ValidateStruct(&req,
 		validation.Field(&req.PropertyID, validation.Required, is.UUID),
-		validation.Field(&req.UserID, validation.Required),
+		validation.Field(&req.User, validation.Required),
 	)
 	if err != nil {
 		return nil, util.BadRequest(err.Error())

@@ -1,12 +1,13 @@
 package api
 
 import (
+	"github.com/HomesNZ/go-secret/auth"
 	"gopkg.in/guregu/null.v3"
 )
 
 type BuyerDemandLatestStatsByPropertyIDRequest struct {
 	PropertyID string
-	UserID     int
+	User       *auth.User
 }
 
 type BuyerDemandStatsResponse struct {
