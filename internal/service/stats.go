@@ -58,23 +58,23 @@ func handlerBuyerDemands(stats *api.BuyerDemandStatsResponse, buyerDemands entit
 
 	if len(buyerDemands) >= 2 {
 		if buyerDemands[0].MedianDaysToSell.Valid && buyerDemands[1].MedianDaysToSell.Valid {
-			medianDaysToSellIncreasedPercent, err := util.IncreasedPercent(buyerDemands[0].MedianDaysToSell.ValueOrZero(), buyerDemands[1].MedianDaysToSell.ValueOrZero())
+			medianDaysToSellTrendPercent, err := util.IncreasedPercent(buyerDemands[0].MedianDaysToSell.ValueOrZero(), buyerDemands[1].MedianDaysToSell.ValueOrZero())
 			if err == nil {
-				stats.MedianDaysToSellIncreasedPercent = null.FloatFrom(medianDaysToSellIncreasedPercent)
+				stats.MedianDaysToSellTrendPercent = null.FloatFrom(medianDaysToSellTrendPercent)
 			}
 		}
 
 		if buyerDemands[0].MedianSalePrice.Valid && buyerDemands[1].MedianSalePrice.Valid {
-			medianSalePriceIncreasedPercent, err := util.IncreasedPercent(buyerDemands[0].MedianSalePrice.ValueOrZero(), buyerDemands[1].MedianSalePrice.ValueOrZero())
+			medianSalePriceTrendPercent, err := util.IncreasedPercent(buyerDemands[0].MedianSalePrice.ValueOrZero(), buyerDemands[1].MedianSalePrice.ValueOrZero())
 			if err == nil {
-				stats.MedianSalePriceIncreasedPercent = null.FloatFrom(medianSalePriceIncreasedPercent)
+				stats.MedianSalePriceTrendPercent = null.FloatFrom(medianSalePriceTrendPercent)
 			}
 		}
 
 		if buyerDemands[0].NumOfForSaleProperties.Valid && buyerDemands[1].NumOfForSaleProperties.Valid {
-			numOfForSalePropertiesIncreasedPercent, err := util.IncreasedPercent(buyerDemands[0].NumOfForSaleProperties.ValueOrZero(), buyerDemands[1].NumOfForSaleProperties.ValueOrZero())
+			numOfForSalePropertiesTrendPercent, err := util.IncreasedPercent(buyerDemands[0].NumOfForSaleProperties.ValueOrZero(), buyerDemands[1].NumOfForSaleProperties.ValueOrZero())
 			if err == nil {
-				stats.NumOfForSalePropertiesIncreasedPercent = null.FloatFrom(numOfForSalePropertiesIncreasedPercent)
+				stats.NumOfForSalePropertiesTrendPercent = null.FloatFrom(numOfForSalePropertiesTrendPercent)
 			}
 		}
 	}
