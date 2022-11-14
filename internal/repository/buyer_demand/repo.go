@@ -110,32 +110,24 @@ func generateWhereClause(suburbID, bedroom, bathroom null.Int, propertyType null
 		index++
 		whereArray = append(whereArray, fmt.Sprintf("suburb_id = $%d", index))
 		values = append(values, suburbID.ValueOrZero())
-	} else {
-		whereArray = append(whereArray, "suburb_id is null")
 	}
 
 	if !bedroom.IsZero() {
 		index++
 		whereArray = append(whereArray, fmt.Sprintf("num_bedrooms = $%d", index))
 		values = append(values, bedroom.ValueOrZero())
-	} else {
-		whereArray = append(whereArray, "num_bedrooms is null")
 	}
 
 	if !bathroom.IsZero() {
 		index++
 		whereArray = append(whereArray, fmt.Sprintf("num_bathrooms = $%d", index))
 		values = append(values, bathroom.ValueOrZero())
-	} else {
-		whereArray = append(whereArray, "num_bathrooms is null")
 	}
 
 	if !propertyType.IsZero() {
 		index++
 		whereArray = append(whereArray, fmt.Sprintf("property_type = $%d", index))
 		values = append(values, propertyType.ValueOrZero())
-	} else {
-		whereArray = append(whereArray, "property_type is null")
 	}
 
 	where := fmt.Sprintf(" OR (%s)", strings.Join(whereArray, " AND "))
