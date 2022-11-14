@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 	"gopkg.in/guregu/null.v3"
 	"strings"
+	"time"
 )
 
 type Repo interface {
@@ -89,19 +90,25 @@ func (r *repo) Populate(ctx context.Context, buyerDemands entity.BuyerDemands, n
 	return errors.Wrap(err, "tx.Commit")
 }
 
-const latestStatsQuery = `
-	SELECT 
-		median_days_to_sell,
-		median_sale_price,
-		num_for_sale_properties,
-		created_at
-	FROM homes_data_export.buyer_demand
-	WHERE FALSE %s
-	ORDER BY created_at DESC
-	LIMIT 2;
-`
+const (
+	latestStatsQuery = `
+		SELECT
+		    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY median_days_to_sell) AS median_days_to_sell,
+		    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY median_sale_price) AS median_sale_price,
+		    SUM(num_for_sale_properties) AS num_for_sale_properties
+		FROM homes_data_export.buyer_demand
+		WHERE FALSE %s;
+	`
+	latestTwoCreatedAtQuery = `
+		SELECT DISTINCT created_at 
+		FROM homes_data_export.buyer_demand
+		WHERE FALSE %s 
+		ORDER BY created_at DESC 
+		LIMIT 2;
+	`
+)
 
-func generateWhereClause(suburbID, bedroom, bathroom null.Int, propertyType null.String) (string, []interface{}) {
+func generateWhereClause(suburbID, bedroom, bathroom null.Int, propertyType null.String) ([]string, []interface{}) {
 	var whereArray []string
 	var values []interface{}
 	index := 0
@@ -130,15 +137,22 @@ func generateWhereClause(suburbID, bedroom, bathroom null.Int, propertyType null
 		values = append(values, propertyType.ValueOrZero())
 	}
 
-	where := fmt.Sprintf(" OR (%s)", strings.Join(whereArray, " AND "))
-	return fmt.Sprintf(latestStatsQuery, where), values
+	return whereArray, values
+}
+
+func extendWhereClause(whereArray []string, args []interface{}, createdDate time.Time) ([]string, []interface{}) {
+	whereArray = append(whereArray, fmt.Sprintf("created_at = $%d", len(args)+1))
+	args = append(args, createdDate)
+	return whereArray, args
 }
 
 func (r *repo) LatestStats(ctx context.Context, suburbID, bedroom, bathroom null.Int, propertyType null.String) (entity.BuyerDemands, error) {
 	resp := entity.BuyerDemands{}
-	query, args := generateWhereClause(suburbID, bedroom, bathroom, propertyType)
+	whereArray, args := generateWhereClause(suburbID, bedroom, bathroom, propertyType)
 
-	rows, err := r.db.Query(ctx, query, args...)
+	createdDatesWhereClause := fmt.Sprintf(" OR (%s)", strings.Join(whereArray, " AND "))
+	createdDatesQuery := fmt.Sprintf(latestTwoCreatedAtQuery, createdDatesWhereClause)
+	createdDatesRows, err := r.db.Query(ctx, createdDatesQuery, args...)
 	if err == pgx.ErrNoRows {
 		return nil, nil
 	}
@@ -146,18 +160,33 @@ func (r *repo) LatestStats(ctx context.Context, suburbID, bedroom, bathroom null
 		return nil, errors.Wrap(err, "db.Query")
 	}
 
-	defer rows.Close()
-	for rows.Next() {
+	var createdDates []time.Time
+	defer createdDatesRows.Close()
+	for createdDatesRows.Next() {
+		v := time.Time{}
+		err := createdDatesRows.Scan(&v)
+		if err != nil {
+			return nil, errors.Wrap(err, "createdDatesRows.Scan")
+		}
+		createdDates = append(createdDates, v)
+	}
+
+	for _, d := range createdDates {
+		extendedWhereArray, extendedArgs := extendWhereClause(whereArray, args, d)
+		whereClause := fmt.Sprintf(" OR (%s)", strings.Join(extendedWhereArray, " AND "))
+		query := fmt.Sprintf(latestStatsQuery, whereClause)
+		row := r.db.QueryRow(ctx, query, extendedArgs...)
+
 		v := entity.BuyerDemand{}
-		err := rows.Scan(
+		err := row.Scan(
 			&v.MedianDaysToSell,
 			&v.MedianSalePrice,
 			&v.NumOfForSaleProperties,
-			&v.CreatedAt,
 		)
 		if err != nil {
-			return nil, errors.Wrap(err, "rows.Next()")
+			return nil, errors.Wrap(err, "rows.Scan")
 		}
+		v.CreatedAt = null.TimeFrom(d)
 		resp = append(resp, v)
 	}
 	return resp, nil
