@@ -113,7 +113,7 @@ func (i *MapItemES) calculateDaysToSell(lastNinetyDays time.Time) null.Int {
 	listingDate := toDate(i.LatestListingDate.ValueOrZero())
 	listingSoldDate := toDate(i.LatestSoldDate.ValueOrZero())
 
-	if listingDate.After(listingSoldDate) || lastNinetyDays.After(listingDate) {
+	if listingDate.After(listingSoldDate) || lastNinetyDays.After(listingSoldDate) {
 		return null.Int{}
 	}
 
