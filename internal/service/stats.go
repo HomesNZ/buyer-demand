@@ -28,9 +28,9 @@ func (s service) BuyerDemandLatestStatsByPropertyID(ctx context.Context, req *ap
 	}
 
 	suburbID := property.Address.SuburbID
-	bedrooms := property.NumBedrooms
-	bathrooms := property.NumBathrooms
 	propertySubCategory := property.PropertySubCategory
+	bedrooms := req.NumBedrooms
+	bathrooms := req.NumBathrooms
 
 	buyerDemands, err := s.repos.BuyerDemand().LatestStats(ctx, suburbID, bedrooms, bathrooms, propertySubCategory)
 	if err != nil {

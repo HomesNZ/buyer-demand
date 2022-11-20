@@ -8,6 +8,8 @@ import (
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
 	"github.com/gorilla/mux"
+	"github.com/gorilla/schema"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"net/http"
 )
@@ -41,6 +43,12 @@ func decodeBuyerDemandLatestStatsByPropertyIDRequest(r *http.Request) (*api.Buye
 	req := api.BuyerDemandLatestStatsByPropertyIDRequest{
 		PropertyID: propertyID,
 		User:       u,
+	}
+
+	decoder := schema.NewDecoder()
+	err = decoder.Decode(&req, r.URL.Query())
+	if err != nil {
+		return nil, errors.Wrap(err, "decoder.Decode")
 	}
 
 	err = validation.ValidateStruct(&req,

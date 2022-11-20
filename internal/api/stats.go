@@ -6,8 +6,10 @@ import (
 )
 
 type BuyerDemandLatestStatsByPropertyIDRequest struct {
-	PropertyID string
-	User       *auth.User
+	PropertyID   string
+	User         *auth.User
+	NumBedrooms  null.Int `schema:"num_bedrooms"`
+	NumBathrooms null.Int `schema:"num_bathrooms"`
 }
 
 type BuyerDemandStatsResponse struct {
