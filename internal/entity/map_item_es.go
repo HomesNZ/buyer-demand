@@ -27,6 +27,81 @@ type Address struct {
 
 type MapItemESs []MapItemES
 
+type BuyerDemandES struct {
+	numberForSaleProperties              int
+	currentRangeNumberForSaleProperties  int
+	previousRangeNumberForSaleProperties int
+	currentRangeDaysToSellList           []int64
+	previousRangeDaysToSellList          []int64
+	currentRangeSalePriceList            []float64
+	previousRangeSalePriceList           []float64
+}
+
+func (bd *BuyerDemandES) appendNumberForSaleProperties(i *MapItemES, currentRangeStartDate time.Time, previousRangeStartDate time.Time) *BuyerDemandES {
+	if i.LatestListingDate.IsZero() {
+		return bd
+	}
+
+	bd.numberForSaleProperties++
+
+	listingDate := util.ToUtcDate(i.LatestListingDate.ValueOrZero())
+	if listingDate.After(currentRangeStartDate) {
+		bd.currentRangeNumberForSaleProperties++
+	} else if listingDate.After(previousRangeStartDate) {
+		bd.previousRangeNumberForSaleProperties++
+	}
+
+	return bd
+}
+
+func (bd *BuyerDemandES) appendDaysToSell(i *MapItemES, currentRangeStartDate time.Time, previousRangeStartDate time.Time) *BuyerDemandES {
+	if i.LatestListingDate.IsZero() || i.LatestSoldDate.IsZero() {
+		return bd
+	}
+
+	listingDate := util.ToUtcDate(i.LatestListingDate.ValueOrZero())
+	listingSoldDate := util.ToUtcDate(i.LatestSoldDate.ValueOrZero())
+
+	if listingDate.After(listingSoldDate) || previousRangeStartDate.After(listingSoldDate) {
+		return bd
+	}
+
+	days := int64(math.Round(listingSoldDate.Sub(listingDate).Hours() / 24))
+
+	if listingSoldDate.After(currentRangeStartDate) {
+		// current time frame range
+		daysToSellList := bd.currentRangeDaysToSellList
+		daysToSellList = append(daysToSellList, days)
+		bd.currentRangeDaysToSellList = daysToSellList
+	} else {
+		// previous time frame range
+		daysToSellList := bd.previousRangeDaysToSellList
+		daysToSellList = append(daysToSellList, days)
+		bd.previousRangeDaysToSellList = daysToSellList
+	}
+
+	return bd
+}
+
+func (bd *BuyerDemandES) appendSalePrice(i *MapItemES, currentRangeStartDate time.Time, previousRangeStartDate time.Time) *BuyerDemandES {
+	if i.Price.IsZero() || i.LatestSoldDate.IsZero() {
+		return bd
+	}
+
+	soldDate := util.ToUtcDate(i.LatestSoldDate.ValueOrZero())
+	if soldDate.After(currentRangeStartDate) {
+		salePriceList := bd.currentRangeSalePriceList
+		salePriceList = append(salePriceList, i.Price.ValueOrZero())
+		bd.currentRangeSalePriceList = salePriceList
+	} else if soldDate.After(previousRangeStartDate) {
+		salePriceList := bd.previousRangeSalePriceList
+		salePriceList = append(salePriceList, i.Price.ValueOrZero())
+		bd.previousRangeSalePriceList = salePriceList
+	}
+
+	return bd
+}
+
 func (i *MapItemES) getKey() buyerDemandKey {
 	return buyerDemandKey(strings.Join(
 		[]string{
@@ -37,111 +112,85 @@ func (i *MapItemES) getKey() buyerDemandKey {
 		}, BuyerDemandKeySeparator))
 }
 
-// GenerateBuyerDemands
-//
-//	 1 Median days to sell:
-//	     listing_id is null && latest sold date > latest listing date && latest listing date > today - 90
-//			return median (latest sold date - latest listing date)
-//	 2 Median sale price:
-//	     listing_id is not null && price is not null
-//	     return median (price)
-//	 3 Number of for sale properties:
-//	     listing_id is not null
-//	     return count (*)
 func (items MapItemESs) GenerateBuyerDemands() BuyerDemands {
-	currentListingMap, daysToSellMap := items.prepareData()
-
 	var result BuyerDemands
-	for key, currentListings := range currentListingMap {
+	if len(items) == 0 {
+		return nil
+	}
+
+	buyerDemandES := items.prepareData()
+	for key, bdES := range buyerDemandES {
 		bd := key.generateBuyerDemandFromKey()
+		bd.CurrentRangeMedianDaysToSell = calculateMedianDaysToSell(bdES.currentRangeDaysToSellList)
+		bd.PreviousRangeMedianDaysToSell = calculateMedianDaysToSell(bdES.previousRangeDaysToSellList)
+		bd.CurrentRangeMedianSalePrice = calculateMedianSalePrice(bdES.currentRangeSalePriceList)
+		bd.PreviousRangeMedianSalePrice = calculateMedianSalePrice(bdES.previousRangeSalePriceList)
+		bd.NumOfForSaleProperties = bdES.numberForSaleProperties
+		bd.CurrentRangeNumOfForSaleProperties = bdES.currentRangeNumberForSaleProperties
+		bd.PreviousRangeNumOfForSaleProperties = bdES.previousRangeNumberForSaleProperties
 
-		var medianDaysToSell null.Int
-		daysToSell, ok := daysToSellMap[key]
-		if ok {
-			medianDaysToSell = calculateMedianDaysToSell(daysToSell)
+		if !bd.isEmpty() {
+			result = append(result, bd)
 		}
-		bd.MedianDaysToSell = medianDaysToSell
-		bd.MedianSalePrice = currentListings.calculateMedianSalePrice()
-		bd.NumOfForSaleProperties = currentListings.calculateNumOfForSaleProperties()
-
-		result = append(result, bd)
 	}
 
 	return result
 }
 
-func (items MapItemESs) prepareData() (map[buyerDemandKey]MapItemESs, map[buyerDemandKey][]int64) {
+func (items MapItemESs) prepareData() map[buyerDemandKey]*BuyerDemandES {
 	now := time.Now()
-	today := toDate(now)
-	lastNinetyDays := today.AddDate(0, 0, -90)
+	today := util.ToUtcDate(now)
+	currentRangeStartDate := today.AddDate(0, 0, -180)
+	previousRangeStartDate := currentRangeStartDate.AddDate(0, 0, -180)
+	currentRangeStartDateForNumberForSaleProperties := today.AddDate(0, 0, -30)
+	previousRangeStartDateForNumberForSaleProperties := currentRangeStartDateForNumberForSaleProperties.AddDate(0, 0, -30)
 
-	currentListingMap := map[buyerDemandKey]MapItemESs{}
-	daysToSellMap := map[buyerDemandKey][]int64{}
+	buyerDemandESMap := map[buyerDemandKey]*BuyerDemandES{}
 
 	for _, item := range items {
 		key := item.getKey()
-		if item.ListingId.Valid {
-			currentListings := currentListingMap[key]
-			currentListings = append(currentListings, item)
-			currentListingMap[key] = currentListings
+		if item.isListing() {
+			buyerDemandES := buyerDemandESMap[key]
+			if buyerDemandES == nil {
+				buyerDemandES = &BuyerDemandES{}
+			}
+			buyerDemandESMap[key] = buyerDemandES.appendNumberForSaleProperties(&item, currentRangeStartDateForNumberForSaleProperties, previousRangeStartDateForNumberForSaleProperties)
 
 			continue
 		}
 
 		if item.isSold() {
-			days := item.calculateDaysToSell(lastNinetyDays)
-			if days.IsZero() {
-				continue
+			buyerDemandES := buyerDemandESMap[key]
+			if buyerDemandES == nil {
+				buyerDemandES = &BuyerDemandES{}
 			}
 
-			daysToSell := daysToSellMap[key]
-			daysToSell = append(daysToSell, days.ValueOrZero())
-			daysToSellMap[key] = daysToSell
+			buyerDemandESMap[key] = buyerDemandES.appendDaysToSell(&item, currentRangeStartDate, previousRangeStartDate)
+			buyerDemandESMap[key] = buyerDemandES.appendSalePrice(&item, currentRangeStartDate, previousRangeStartDate)
 
 			continue
 		}
 	}
 
-	return currentListingMap, daysToSellMap
+	return buyerDemandESMap
 }
 
-func (i *MapItemES) calculateDaysToSell(lastNinetyDays time.Time) null.Int {
-	if i.LatestListingDate.IsZero() || i.LatestSoldDate.IsZero() {
-		return null.Int{}
-	}
-
-	listingDate := toDate(i.LatestListingDate.ValueOrZero())
-	listingSoldDate := toDate(i.LatestSoldDate.ValueOrZero())
-
-	if listingDate.After(listingSoldDate) || lastNinetyDays.After(listingDate) {
-		return null.Int{}
-	}
-
-	days := int64(math.Round(listingSoldDate.Sub(listingDate).Hours() / 24))
-	return null.IntFrom(days)
+func (i *MapItemES) isListing() bool {
+	return i.ListingId.Valid
 }
 
 func (i *MapItemES) isSold() bool {
 	return i.PropertyState.Valid && i.PropertyState.ValueOrZero() == 2
 }
 
-func toDate(t time.Time) time.Time {
-	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC)
-}
-
 func calculateMedianDaysToSell(daysToSell []int64) null.Int {
+	if len(daysToSell) == 0 {
+		return null.Int{}
+	}
+
 	return null.IntFrom(int64(util.Median(daysToSell)))
 }
 
-func (items MapItemESs) calculateMedianSalePrice() float64 {
-	var priceArray []float64
-	for _, item := range items {
-		priceArray = append(priceArray, item.Price.ValueOrZero())
-	}
-
-	return util.Median(priceArray)
-}
-
-func (items MapItemESs) calculateNumOfForSaleProperties() int {
-	return len(items)
+func calculateMedianSalePrice(salePrices []float64) float64 {
+	return util.Median(salePrices)
 }

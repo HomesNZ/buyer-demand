@@ -5,6 +5,7 @@ vendor
 ### IDE
 .idea
 .vscode
+.fleet
 
 ### Go
 # Binaries for programs and plugins

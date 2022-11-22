@@ -12,18 +12,12 @@ import (
 )
 
 var _ = Describe("BuyerDemand", func() {
-	//var mockCtrl *gomock.Controller
-	//var s Service
-	//var esClient *mockES.MockClient
-	//var repos *mockRepo.MockRepositories
-	//var addressRepo *mockAddress.MockRepo
-	//var buyerDemandRepo *mockBuyerDemand.MockRepo
 
 	now := time.Now()
 	today := time.Date(now.Year(), now.Month(), now.Day(), 1, 2, 3, 4, now.Location())
-	yesterday := time.Date(now.Year(), now.Month(), now.Day()-1, 1, 2, 3, 4, now.Location())
-	theDayBeforeYesterday := time.Date(now.Year(), now.Month(), now.Day()-2, 1, 2, 3, 4, now.Location())
-	previousYear := time.Date(1990, now.Month(), 1, 1, 2, 3, 4, now.Location())
+	currentRange := today.AddDate(0, 0, -90)
+	previousRange := currentRange.AddDate(0, 0, -180)
+	outOfRange := previousRange.AddDate(0, 0, -180)
 
 	address1020 := entity.Address{
 		SuburbID: null.IntFrom(1020),
@@ -32,7 +26,6 @@ var _ = Describe("BuyerDemand", func() {
 		SuburbID: null.Int{},
 	}
 	mapItems := entity.MapItemESs{
-		// current listing: 4 Bedrooms, 3 Bathrooms, 1020, RR1234, 850000
 		entity.MapItemES{
 			NumBedrooms:         null.IntFrom(4),
 			NumBathrooms:        null.IntFrom(3),
@@ -43,7 +36,6 @@ var _ = Describe("BuyerDemand", func() {
 			LatestListingDate:   null.TimeFrom(now),
 			LatestSoldDate:      null.Time{},
 		},
-		// current listing: 4 Bedrooms, 3 Bathrooms, 1020, RR4321, 900000
 		entity.MapItemES{
 			NumBedrooms:         null.IntFrom(4),
 			NumBathrooms:        null.IntFrom(3),
@@ -51,10 +43,9 @@ var _ = Describe("BuyerDemand", func() {
 			PropertySubCategory: null.StringFrom("RR"),
 			Price:               null.FloatFrom(900000),
 			ListingId:           null.StringFrom("listing-test-2"),
-			LatestListingDate:   null.TimeFrom(now),
+			LatestListingDate:   null.TimeFrom(now.AddDate(0, 0, -35)),
 			LatestSoldDate:      null.Time{},
 		},
-		// current listing: null Bedrooms, 3 Bathrooms, 1020, RR1234, 900000
 		entity.MapItemES{
 			NumBedrooms:         null.Int{},
 			NumBathrooms:        null.IntFrom(3),
@@ -65,7 +56,6 @@ var _ = Describe("BuyerDemand", func() {
 			LatestListingDate:   null.TimeFrom(now),
 			LatestSoldDate:      null.Time{},
 		},
-		// current listing: 4 Bedrooms, null Bathrooms, 1020, RR1234, 900000
 		entity.MapItemES{
 			NumBedrooms:         null.IntFrom(4),
 			NumBathrooms:        null.Int{},
@@ -76,7 +66,6 @@ var _ = Describe("BuyerDemand", func() {
 			LatestListingDate:   null.TimeFrom(now),
 			LatestSoldDate:      null.Time{},
 		},
-		// current listing: 4 Bedrooms, 3 Bathrooms, null SuburbID, RR1234, 900000
 		entity.MapItemES{
 			NumBedrooms:         null.IntFrom(4),
 			NumBathrooms:        null.IntFrom(3),
@@ -87,7 +76,6 @@ var _ = Describe("BuyerDemand", func() {
 			LatestListingDate:   null.TimeFrom(now),
 			LatestSoldDate:      null.TimeFrom(now.AddDate(-1, 0, -3)),
 		},
-		// current listing: 4 Bedrooms, 3 Bathrooms, 1020, null CategoryCode, 900000
 		entity.MapItemES{
 			NumBedrooms:         null.IntFrom(4),
 			NumBathrooms:        null.IntFrom(3),
@@ -98,7 +86,6 @@ var _ = Describe("BuyerDemand", func() {
 			LatestListingDate:   null.TimeFrom(now),
 			LatestSoldDate:      null.TimeFrom(now.AddDate(0, -2, -1)),
 		},
-		// current listing: 4 Bedrooms, 3 Bathrooms, 1020, RP1234, null Price
 		entity.MapItemES{
 			NumBedrooms:         null.IntFrom(4),
 			NumBathrooms:        null.IntFrom(3),
@@ -109,7 +96,6 @@ var _ = Describe("BuyerDemand", func() {
 			LatestListingDate:   null.TimeFrom(now),
 			LatestSoldDate:      null.TimeFrom(now.AddDate(0, 0, -10)),
 		},
-		// current listing: 4 Bedrooms, 3 Bathrooms, 1020, RP1234, 900000
 		entity.MapItemES{
 			NumBedrooms:         null.IntFrom(4),
 			NumBathrooms:        null.IntFrom(3),
@@ -120,7 +106,50 @@ var _ = Describe("BuyerDemand", func() {
 			LatestListingDate:   null.Time{},
 			LatestSoldDate:      null.Time{},
 		},
-		// recent unlisted: null Bedrooms, 3 Bathrooms, 1020, RR1234, 900000
+		entity.MapItemES{
+			NumBedrooms:         null.IntFrom(4),
+			NumBathrooms:        null.IntFrom(3),
+			Address:             address1020,
+			PropertySubCategory: null.StringFrom("RR"),
+			Price:               null.FloatFrom(753000),
+			ListingId:           null.String{},
+			PropertyState:       null.IntFrom(2),
+			LatestListingDate:   null.TimeFrom(currentRange),
+			LatestSoldDate:      null.TimeFrom(today),
+		},
+		entity.MapItemES{
+			NumBedrooms:         null.IntFrom(4),
+			NumBathrooms:        null.IntFrom(3),
+			Address:             address1020,
+			PropertySubCategory: null.StringFrom("RR"),
+			Price:               null.FloatFrom(853000),
+			ListingId:           null.String{},
+			PropertyState:       null.IntFrom(2),
+			LatestListingDate:   null.TimeFrom(previousRange),
+			LatestSoldDate:      null.TimeFrom(currentRange),
+		},
+		entity.MapItemES{
+			NumBedrooms:         null.IntFrom(4),
+			NumBathrooms:        null.IntFrom(3),
+			Address:             address1020,
+			PropertySubCategory: null.StringFrom("RR"),
+			Price:               null.FloatFrom(830000),
+			ListingId:           null.String{},
+			PropertyState:       null.IntFrom(2),
+			LatestListingDate:   null.TimeFrom(outOfRange),
+			LatestSoldDate:      null.TimeFrom(previousRange),
+		},
+		entity.MapItemES{
+			NumBedrooms:         null.IntFrom(4),
+			NumBathrooms:        null.IntFrom(3),
+			Address:             address1020,
+			PropertySubCategory: null.StringFrom("RR"),
+			Price:               null.FloatFrom(630000),
+			ListingId:           null.String{},
+			PropertyState:       null.IntFrom(2),
+			LatestListingDate:   null.TimeFrom(outOfRange),
+			LatestSoldDate:      null.TimeFrom(outOfRange),
+		},
 		entity.MapItemES{
 			NumBedrooms:         null.Int{},
 			NumBathrooms:        null.IntFrom(3),
@@ -129,10 +158,9 @@ var _ = Describe("BuyerDemand", func() {
 			Price:               null.FloatFrom(800000),
 			ListingId:           null.String{},
 			PropertyState:       null.IntFrom(2),
-			LatestListingDate:   null.TimeFrom(theDayBeforeYesterday),
-			LatestSoldDate:      null.TimeFrom(today),
+			LatestListingDate:   null.TimeFrom(previousRange),
+			LatestSoldDate:      null.TimeFrom(outOfRange),
 		},
-		// recent unlisted: null Bedrooms, 3 Bathrooms, 1020, RR1234, 900000
 		entity.MapItemES{
 			NumBedrooms:         null.Int{},
 			NumBathrooms:        null.IntFrom(3),
@@ -141,10 +169,9 @@ var _ = Describe("BuyerDemand", func() {
 			Price:               null.FloatFrom(830000),
 			ListingId:           null.String{},
 			PropertyState:       null.IntFrom(2),
-			LatestListingDate:   null.TimeFrom(theDayBeforeYesterday),
-			LatestSoldDate:      null.TimeFrom(yesterday),
+			LatestListingDate:   null.TimeFrom(previousRange),
+			LatestSoldDate:      null.TimeFrom(currentRange),
 		},
-		// recent unlisted: null Bedrooms, 3 Bathrooms, 1020, RR1234, 900000
 		entity.MapItemES{
 			NumBedrooms:         null.Int{},
 			NumBathrooms:        null.IntFrom(3),
@@ -153,132 +180,93 @@ var _ = Describe("BuyerDemand", func() {
 			Price:               null.FloatFrom(760000),
 			ListingId:           null.String{},
 			PropertyState:       null.Int{},
-			LatestListingDate:   null.TimeFrom(previousYear),
-			LatestSoldDate:      null.TimeFrom(now),
-		},
-		// recent unlisted: 4 Bedrooms, 3 Bathrooms, 1020, RR1234, 900000
-		entity.MapItemES{
-			NumBedrooms:         null.IntFrom(4),
-			NumBathrooms:        null.IntFrom(3),
-			Address:             address1020,
-			PropertySubCategory: null.StringFrom("RR"),
-			Price:               null.FloatFrom(730000),
-			ListingId:           null.String{},
-			PropertyState:       null.IntFrom(2),
-			LatestListingDate:   null.TimeFrom(yesterday),
-			LatestSoldDate:      null.TimeFrom(today),
+			LatestListingDate:   null.TimeFrom(outOfRange),
+			LatestSoldDate:      null.TimeFrom(previousRange),
 		},
 	}
 
 	bds := entity.BuyerDemands{
 		entity.BuyerDemand{
-			NumBedrooms:            null.Int{},
-			NumBathrooms:           null.IntFrom(3),
-			SuburbID:               null.IntFrom(1020),
-			PropertyType:           null.StringFrom("RR"),
-			MedianDaysToSell:       null.IntFrom(1),
-			MedianSalePrice:        650000,
-			NumOfForSaleProperties: 1,
+			NumBedrooms:                         null.Int{},
+			NumBathrooms:                        null.IntFrom(3),
+			SuburbID:                            null.IntFrom(1020),
+			PropertyType:                        null.StringFrom("RR"),
+			CurrentRangeMedianDaysToSell:        null.IntFrom(180),
+			PreviousRangeMedianDaysToSell:       null.Int{},
+			CurrentRangeMedianSalePrice:         830000,
+			PreviousRangeMedianSalePrice:        0,
+			NumOfForSaleProperties:              1,
+			CurrentRangeNumOfForSaleProperties:  1,
+			PreviousRangeNumOfForSaleProperties: 0,
 		},
 		entity.BuyerDemand{
-			NumBedrooms:            null.IntFrom(4),
-			NumBathrooms:           null.Int{},
-			SuburbID:               null.IntFrom(1020),
-			PropertyType:           null.StringFrom("RR"),
-			MedianDaysToSell:       null.Int{},
-			MedianSalePrice:        850000,
-			NumOfForSaleProperties: 1,
+			NumBedrooms:                         null.IntFrom(4),
+			NumBathrooms:                        null.Int{},
+			SuburbID:                            null.IntFrom(1020),
+			PropertyType:                        null.StringFrom("RR"),
+			CurrentRangeMedianDaysToSell:        null.Int{},
+			PreviousRangeMedianDaysToSell:       null.Int{},
+			CurrentRangeMedianSalePrice:         0,
+			PreviousRangeMedianSalePrice:        0,
+			NumOfForSaleProperties:              1,
+			CurrentRangeNumOfForSaleProperties:  1,
+			PreviousRangeNumOfForSaleProperties: 0,
 		},
 		entity.BuyerDemand{
-			NumBedrooms:            null.IntFrom(4),
-			NumBathrooms:           null.IntFrom(3),
-			SuburbID:               null.Int{},
-			PropertyType:           null.StringFrom("RR"),
-			MedianDaysToSell:       null.Int{},
-			MedianSalePrice:        725000,
-			NumOfForSaleProperties: 1,
+			NumBedrooms:                         null.IntFrom(4),
+			NumBathrooms:                        null.IntFrom(3),
+			SuburbID:                            null.Int{},
+			PropertyType:                        null.StringFrom("RR"),
+			CurrentRangeMedianDaysToSell:        null.Int{},
+			PreviousRangeMedianDaysToSell:       null.Int{},
+			CurrentRangeMedianSalePrice:         0,
+			PreviousRangeMedianSalePrice:        0,
+			NumOfForSaleProperties:              1,
+			CurrentRangeNumOfForSaleProperties:  1,
+			PreviousRangeNumOfForSaleProperties: 0,
 		},
 		entity.BuyerDemand{
-			NumBedrooms:            null.IntFrom(4),
-			NumBathrooms:           null.IntFrom(3),
-			SuburbID:               null.IntFrom(1020),
-			PropertyType:           null.String{},
-			MedianDaysToSell:       null.Int{},
-			MedianSalePrice:        750000,
-			NumOfForSaleProperties: 1,
+			NumBedrooms:                         null.IntFrom(4),
+			NumBathrooms:                        null.IntFrom(3),
+			SuburbID:                            null.IntFrom(1020),
+			PropertyType:                        null.String{},
+			CurrentRangeMedianDaysToSell:        null.Int{},
+			PreviousRangeMedianDaysToSell:       null.Int{},
+			CurrentRangeMedianSalePrice:         0,
+			PreviousRangeMedianSalePrice:        0,
+			NumOfForSaleProperties:              1,
+			CurrentRangeNumOfForSaleProperties:  1,
+			PreviousRangeNumOfForSaleProperties: 0,
 		},
 		entity.BuyerDemand{
-			NumBedrooms:            null.IntFrom(4),
-			NumBathrooms:           null.IntFrom(3),
-			SuburbID:               null.IntFrom(1020),
-			PropertyType:           null.StringFrom("RR"),
-			MedianDaysToSell:       null.IntFrom(1),
-			MedianSalePrice:        750000,
-			NumOfForSaleProperties: 2,
+			NumBedrooms:                         null.IntFrom(4),
+			NumBathrooms:                        null.IntFrom(3),
+			SuburbID:                            null.IntFrom(1020),
+			PropertyType:                        null.StringFrom("RR"),
+			CurrentRangeMedianDaysToSell:        null.IntFrom(135),
+			PreviousRangeMedianDaysToSell:       null.IntFrom(180),
+			CurrentRangeMedianSalePrice:         803000,
+			PreviousRangeMedianSalePrice:        830000,
+			NumOfForSaleProperties:              2,
+			CurrentRangeNumOfForSaleProperties:  1,
+			PreviousRangeNumOfForSaleProperties: 1,
 		},
 		entity.BuyerDemand{
-			NumBedrooms:            null.IntFrom(4),
-			NumBathrooms:           null.IntFrom(3),
-			SuburbID:               null.IntFrom(1020),
-			PropertyType:           null.StringFrom("RP"),
-			MedianDaysToSell:       null.Int{},
-			MedianSalePrice:        400000,
-			NumOfForSaleProperties: 2,
+			NumBedrooms:                         null.IntFrom(4),
+			NumBathrooms:                        null.IntFrom(3),
+			SuburbID:                            null.IntFrom(1020),
+			PropertyType:                        null.StringFrom("RP"),
+			CurrentRangeMedianDaysToSell:        null.Int{},
+			PreviousRangeMedianDaysToSell:       null.Int{},
+			CurrentRangeMedianSalePrice:         0,
+			PreviousRangeMedianSalePrice:        0,
+			NumOfForSaleProperties:              1,
+			CurrentRangeNumOfForSaleProperties:  1,
+			PreviousRangeNumOfForSaleProperties: 0,
 		},
 	}
 
-	BeforeEach(func() {
-		//mockCtrl = gomock.NewController(GinkgoT())
-		//esClient = mockES.NewMockClient(mockCtrl)
-		//repos = mockRepo.NewMockRepositories(mockCtrl)
-		//addressRepo = mockAddress.NewMockRepo(mockCtrl)
-		//buyerDemandRepo = mockBuyerDemand.NewMockRepo(mockCtrl)
-		//s = &service{
-		//	repos:    repos,
-		//	esClient: esClient,
-		//	logger:   logrus.WithField("testing", true),
-		//}
-	})
-
-	AfterEach(func() {
-		//mockCtrl.Finish()
-	})
-
 	Describe("DailyBuyerDemandTableRefresh", func() {
-		//ctx := context.Background()
-
-		//It("query suburbIDs from DB error", func() {
-		//	repos.EXPECT().Address().Return(addressRepo)
-		//	addressRepo.EXPECT().AllSuburbIDs(ctx).Return(nil, errors.New("test error"))
-		//
-		//	err := s.DailyBuyerDemandTableRefresh(ctx)
-		//
-		//	Expect(err).To(HaveOccurred())
-		//	Expect(err.Error()).To(ContainSubstring("AllSuburbIDs"))
-		//})
-		//
-		//It("query mapItems from ES error", func() {
-		//	repos.EXPECT().Address().Return(addressRepo)
-		//	addressRepo.EXPECT().AllSuburbIDs(ctx).Return([]int{1020}, nil)
-		//
-		//	esClient.EXPECT().BySuburbID(ctx, 1020).Return(nil, errors.New("test error"))
-		//
-		//	err := s.DailyBuyerDemandTableRefresh(ctx)
-		//
-		//	Expect(err).To(HaveOccurred())
-		//	Expect(err.Error()).To(ContainSubstring("esClient.BySuburbID"))
-		//})
-		//
-		//It("correct", func() {
-		//	repos.EXPECT().Address().Return(addressRepo)
-		//	addressRepo.EXPECT().AllSuburbIDs(ctx).Return([]int{1020}, nil)
-		//
-		//	esClient.EXPECT().BySuburbID(ctx, 1020).Return(mapItems, nil)
-		//
-		//	err := s.DailyBuyerDemandTableRefresh(ctx)
-		//
-		//	Expect(err).NotTo(HaveOccurred())
-		//})
 
 		It("generateBuyerDemand", func() {
 			bdsActual := mapItems.GenerateBuyerDemands()

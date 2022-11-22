@@ -9,13 +9,25 @@ import (
 const BuyerDemandKeySeparator = "-"
 
 type BuyerDemand struct {
-	NumBedrooms            null.Int    `json:"num_bedrooms"`
-	NumBathrooms           null.Int    `json:"num_bathrooms"`
-	SuburbID               null.Int    `json:"suburb_id"`
-	PropertyType           null.String `json:"property_type"`
-	MedianDaysToSell       null.Int    `json:"median_days_to_sell"`
-	MedianSalePrice        float64     `json:"median_sale_price"`
-	NumOfForSaleProperties int         `json:"num_for_sale_properties"`
+	NumBedrooms                         null.Int    `json:"num_bedrooms"`
+	NumBathrooms                        null.Int    `json:"num_bathrooms"`
+	SuburbID                            null.Int    `json:"suburb_id"`
+	PropertyType                        null.String `json:"property_type"`
+	CurrentRangeMedianDaysToSell        null.Int    `json:"current_median_days_to_sell"`
+	PreviousRangeMedianDaysToSell       null.Int    `json:"previous_median_days_to_sell"`
+	CurrentRangeMedianSalePrice         float64     `json:"current_median_sale_price"`
+	PreviousRangeMedianSalePrice        float64     `json:"previous_median_sale_price"`
+	NumOfForSaleProperties              int         `json:"num_for_sale_properties"`
+	CurrentRangeNumOfForSaleProperties  int         `json:"current_num_for_sale_properties"`
+	PreviousRangeNumOfForSaleProperties int         `json:"previous_num_for_sale_properties"`
+}
+
+func (bd BuyerDemand) isEmpty() bool {
+	return bd.CurrentRangeMedianDaysToSell.IsZero() && bd.PreviousRangeMedianDaysToSell.IsZero() &&
+		bd.CurrentRangeMedianSalePrice == 0 && bd.PreviousRangeMedianSalePrice == 0 &&
+		bd.NumOfForSaleProperties == 0 && bd.CurrentRangeNumOfForSaleProperties == 0 &&
+		bd.PreviousRangeNumOfForSaleProperties == 0
+
 }
 
 type BuyerDemands []BuyerDemand
