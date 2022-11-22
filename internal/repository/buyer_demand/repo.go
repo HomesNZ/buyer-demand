@@ -2,13 +2,17 @@ package address
 
 import (
 	"context"
+	"fmt"
 	"github.com/HomesNZ/buyer-demand/internal/entity"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/pkg/errors"
+	"gopkg.in/guregu/null.v3"
+	"strings"
 )
 
 type Repo interface {
 	Populate(ctx context.Context, buyerDemands entity.BuyerDemands, needToDeleteTodayData bool) error
+	LatestStats(ctx context.Context, suburbID, bedroom, bathroom null.Int, propertyType null.String) (entity.BuyerDemand, error)
 }
 
 func New(db *pgxpool.Pool) (Repo, error) {
@@ -90,4 +94,72 @@ func (r *repo) Populate(ctx context.Context, buyerDemands entity.BuyerDemands, n
 
 	err = tx.Commit(ctx)
 	return errors.Wrap(err, "tx.Commit")
+}
+
+const latestStatsQuery = `
+	SELECT
+	    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY current_median_days_to_sell) AS current_median_days_to_sell,
+	    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY previous_median_days_to_sell) AS previous_median_days_to_sell,
+	    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY current_median_sale_price) AS current_median_sale_price,
+	    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY previous_median_sale_price) AS previous_median_sale_price,
+	    SUM(num_for_sale_properties) AS num_for_sale_properties,
+	    SUM(current_num_for_sale_properties) AS current_num_for_sale_properties,
+	    SUM(previous_num_for_sale_properties) AS previous_num_for_sale_properties,
+	    MAX(created_at) AS created_at
+	FROM homes_data_export.buyer_demand
+	WHERE FALSE %s;
+`
+
+func generateWhereClause(suburbID, bedroom, bathroom null.Int, propertyType null.String) ([]string, []interface{}) {
+	var whereArray []string
+	var values []interface{}
+	index := 0
+
+	if !suburbID.IsZero() {
+		index++
+		whereArray = append(whereArray, fmt.Sprintf("suburb_id = $%d", index))
+		values = append(values, suburbID.ValueOrZero())
+	}
+
+	if !bedroom.IsZero() {
+		index++
+		whereArray = append(whereArray, fmt.Sprintf("num_bedrooms = $%d", index))
+		values = append(values, bedroom.ValueOrZero())
+	}
+
+	if !bathroom.IsZero() {
+		index++
+		whereArray = append(whereArray, fmt.Sprintf("num_bathrooms = $%d", index))
+		values = append(values, bathroom.ValueOrZero())
+	}
+
+	if !propertyType.IsZero() {
+		index++
+		whereArray = append(whereArray, fmt.Sprintf("property_type = $%d", index))
+		values = append(values, propertyType.ValueOrZero())
+	}
+
+	return whereArray, values
+}
+
+func (r *repo) LatestStats(ctx context.Context, suburbID, bedroom, bathroom null.Int, propertyType null.String) (entity.BuyerDemand, error) {
+	whereArray, args := generateWhereClause(suburbID, bedroom, bathroom, propertyType)
+
+	whereClause := fmt.Sprintf(" OR (%s)", strings.Join(whereArray, " AND "))
+	query := fmt.Sprintf(latestStatsQuery, whereClause)
+	row := r.db.QueryRow(ctx, query, args...)
+
+	bd := entity.BuyerDemand{}
+	err := row.Scan(
+		&bd.CurrentRangeMedianDaysToSell,
+		&bd.PreviousRangeMedianDaysToSell,
+		&bd.CurrentRangeMedianSalePrice,
+		&bd.PreviousRangeMedianSalePrice,
+		&bd.NumOfForSaleProperties,
+		&bd.CurrentRangeNumOfForSaleProperties,
+		&bd.PreviousRangeNumOfForSaleProperties,
+		&bd.CreatedAt,
+	)
+
+	return bd, errors.Wrap(err, "rows.Scan")
 }

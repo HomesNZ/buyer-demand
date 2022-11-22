@@ -125,11 +125,11 @@ func (items MapItemESs) GenerateBuyerDemands() BuyerDemands {
 		bd.PreviousRangeMedianDaysToSell = calculateMedianDaysToSell(bdES.previousRangeDaysToSellList)
 		bd.CurrentRangeMedianSalePrice = calculateMedianSalePrice(bdES.currentRangeSalePriceList)
 		bd.PreviousRangeMedianSalePrice = calculateMedianSalePrice(bdES.previousRangeSalePriceList)
-		bd.NumOfForSaleProperties = bdES.numberForSaleProperties
-		bd.CurrentRangeNumOfForSaleProperties = bdES.currentRangeNumberForSaleProperties
-		bd.PreviousRangeNumOfForSaleProperties = bdES.previousRangeNumberForSaleProperties
+		bd.NumOfForSaleProperties = null.IntFrom(int64(bdES.numberForSaleProperties))
+		bd.CurrentRangeNumOfForSaleProperties = null.IntFrom(int64(bdES.currentRangeNumberForSaleProperties))
+		bd.PreviousRangeNumOfForSaleProperties = null.IntFrom(int64(bdES.previousRangeNumberForSaleProperties))
 
-		if !bd.isEmpty() {
+		if !bd.IsEmpty() {
 			result = append(result, bd)
 		}
 	}
@@ -191,6 +191,9 @@ func calculateMedianDaysToSell(daysToSell []int64) null.Int {
 	return null.IntFrom(int64(util.Median(daysToSell)))
 }
 
-func calculateMedianSalePrice(salePrices []float64) float64 {
-	return util.Median(salePrices)
+func calculateMedianSalePrice(salePrices []float64) null.Float {
+	if len(salePrices) == 0 {
+		return null.Float{}
+	}
+	return null.FloatFrom(util.Median(salePrices))
 }
