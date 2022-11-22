@@ -38,11 +38,9 @@ type BuyerDemandES struct {
 }
 
 func (bd *BuyerDemandES) appendNumberForSaleProperties(i *MapItemES, currentRangeStartDate time.Time, previousRangeStartDate time.Time) *BuyerDemandES {
-	if i.LatestListingDate.IsZero() {
-		return bd
+	if i.isCurrentListing() {
+		bd.numberForSaleProperties++
 	}
-
-	bd.numberForSaleProperties++
 
 	listingDate := util.ToUtcDate(i.LatestListingDate.ValueOrZero())
 	if listingDate.After(currentRangeStartDate) {
@@ -149,14 +147,12 @@ func (items MapItemESs) prepareData() map[buyerDemandKey]*BuyerDemandES {
 
 	for _, item := range items {
 		key := item.getKey()
-		if item.isListing() {
+		if item.isRecentListing(previousRangeStartDateForNumberForSaleProperties) {
 			buyerDemandES := buyerDemandESMap[key]
 			if buyerDemandES == nil {
 				buyerDemandES = &BuyerDemandES{}
 			}
 			buyerDemandESMap[key] = buyerDemandES.appendNumberForSaleProperties(&item, currentRangeStartDateForNumberForSaleProperties, previousRangeStartDateForNumberForSaleProperties)
-
-			continue
 		}
 
 		if item.isSold() {
@@ -175,8 +171,12 @@ func (items MapItemESs) prepareData() map[buyerDemandKey]*BuyerDemandES {
 	return buyerDemandESMap
 }
 
-func (i *MapItemES) isListing() bool {
+func (i *MapItemES) isCurrentListing() bool {
 	return i.ListingId.Valid
+}
+
+func (i *MapItemES) isRecentListing(startDate time.Time) bool {
+	return i.LatestListingDate.Valid && i.LatestListingDate.ValueOrZero().After(startDate)
 }
 
 func (i *MapItemES) isSold() bool {
