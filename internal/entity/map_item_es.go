@@ -129,7 +129,7 @@ func (items MapItemESs) GenerateBuyerDemands() BuyerDemands {
 		bd.CurrentRangeNumOfForSaleProperties = null.IntFrom(int64(bdES.currentRangeNumberForSaleProperties))
 		bd.PreviousRangeNumOfForSaleProperties = null.IntFrom(int64(bdES.previousRangeNumberForSaleProperties))
 
-		if !bd.isEmpty() {
+		if !bd.IsEmpty() {
 			result = append(result, bd)
 		}
 	}

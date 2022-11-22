@@ -23,7 +23,7 @@ type BuyerDemand struct {
 	CreatedAt                           null.Time   `json:"created_at"`
 }
 
-func (bd BuyerDemand) isEmpty() bool {
+func (bd BuyerDemand) IsEmpty() bool {
 	return bd.CurrentRangeMedianDaysToSell.IsZero() && bd.PreviousRangeMedianDaysToSell.IsZero() &&
 		bd.CurrentRangeMedianSalePrice.IsZero() && bd.PreviousRangeMedianSalePrice.IsZero() &&
 		bd.NumOfForSaleProperties.IsZero() && bd.CurrentRangeNumOfForSaleProperties.IsZero() &&

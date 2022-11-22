@@ -5,7 +5,7 @@ import (
 	"gopkg.in/guregu/null.v3"
 )
 
-type BuyerDemandLatestStatsByPropertyIDRequest struct {
+type BuyerDemandLatestStatsRequest struct {
 	PropertyID   string
 	User         *auth.User
 	NumBedrooms  null.Int `schema:"num_bedrooms"`

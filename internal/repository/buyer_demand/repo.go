@@ -4,17 +4,15 @@ import (
 	"context"
 	"fmt"
 	"github.com/HomesNZ/buyer-demand/internal/entity"
-	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/pkg/errors"
 	"gopkg.in/guregu/null.v3"
 	"strings"
-	"time"
 )
 
 type Repo interface {
 	Populate(ctx context.Context, buyerDemands entity.BuyerDemands, needToDeleteTodayData bool) error
-	LatestStats(ctx context.Context, suburbID, bedroom, bathroom null.Int, propertyType null.String) (entity.BuyerDemands, error)
+	LatestStats(ctx context.Context, suburbID, bedroom, bathroom null.Int, propertyType null.String) (entity.BuyerDemand, error)
 }
 
 func New(db *pgxpool.Pool) (Repo, error) {
@@ -98,23 +96,19 @@ func (r *repo) Populate(ctx context.Context, buyerDemands entity.BuyerDemands, n
 	return errors.Wrap(err, "tx.Commit")
 }
 
-const (
-	latestStatsQuery = `
-		SELECT
-		    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY median_days_to_sell) AS median_days_to_sell,
-		    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY median_sale_price) AS median_sale_price,
-		    SUM(num_for_sale_properties) AS num_for_sale_properties
-		FROM homes_data_export.buyer_demand
-		WHERE FALSE %s;
-	`
-	latestTwoCreatedAtQuery = `
-		SELECT DISTINCT created_at 
-		FROM homes_data_export.buyer_demand
-		WHERE FALSE %s 
-		ORDER BY created_at DESC 
-		LIMIT 2;
-	`
-)
+const latestStatsQuery = `
+	SELECT
+	    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY current_median_days_to_sell) AS current_median_days_to_sell,
+	    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY previous_median_days_to_sell) AS previous_median_days_to_sell,
+	    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY current_median_sale_price) AS current_median_sale_price,
+	    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY previous_median_sale_price) AS previous_median_sale_price,
+	    SUM(num_for_sale_properties) AS num_for_sale_properties,
+	    SUM(current_num_for_sale_properties) AS current_num_for_sale_properties,
+	    SUM(previous_num_for_sale_properties) AS previous_num_for_sale_properties,
+	    MAX(created_at) AS created_at
+	FROM homes_data_export.buyer_demand
+	WHERE FALSE %s;
+`
 
 func generateWhereClause(suburbID, bedroom, bathroom null.Int, propertyType null.String) ([]string, []interface{}) {
 	var whereArray []string
@@ -148,54 +142,24 @@ func generateWhereClause(suburbID, bedroom, bathroom null.Int, propertyType null
 	return whereArray, values
 }
 
-func extendWhereClause(whereArray []string, args []interface{}, createdDate time.Time) ([]string, []interface{}) {
-	whereArray = append(whereArray, fmt.Sprintf("created_at = $%d", len(args)+1))
-	args = append(args, createdDate)
-	return whereArray, args
-}
-
-func (r *repo) LatestStats(ctx context.Context, suburbID, bedroom, bathroom null.Int, propertyType null.String) (entity.BuyerDemands, error) {
-	resp := entity.BuyerDemands{}
+func (r *repo) LatestStats(ctx context.Context, suburbID, bedroom, bathroom null.Int, propertyType null.String) (entity.BuyerDemand, error) {
 	whereArray, args := generateWhereClause(suburbID, bedroom, bathroom, propertyType)
 
-	createdDatesWhereClause := fmt.Sprintf(" OR (%s)", strings.Join(whereArray, " AND "))
-	createdDatesQuery := fmt.Sprintf(latestTwoCreatedAtQuery, createdDatesWhereClause)
-	createdDatesRows, err := r.db.Query(ctx, createdDatesQuery, args...)
-	if err == pgx.ErrNoRows {
-		return nil, nil
-	}
-	if err != nil {
-		return nil, errors.Wrap(err, "db.Query")
-	}
+	whereClause := fmt.Sprintf(" OR (%s)", strings.Join(whereArray, " AND "))
+	query := fmt.Sprintf(latestStatsQuery, whereClause)
+	row := r.db.QueryRow(ctx, query, args...)
 
-	var createdDates []time.Time
-	defer createdDatesRows.Close()
-	for createdDatesRows.Next() {
-		v := time.Time{}
-		err := createdDatesRows.Scan(&v)
-		if err != nil {
-			return nil, errors.Wrap(err, "createdDatesRows.Scan")
-		}
-		createdDates = append(createdDates, v)
-	}
+	bd := entity.BuyerDemand{}
+	err := row.Scan(
+		&bd.CurrentRangeMedianDaysToSell,
+		&bd.PreviousRangeMedianDaysToSell,
+		&bd.CurrentRangeMedianSalePrice,
+		&bd.PreviousRangeMedianSalePrice,
+		&bd.NumOfForSaleProperties,
+		&bd.CurrentRangeNumOfForSaleProperties,
+		&bd.PreviousRangeNumOfForSaleProperties,
+		&bd.CreatedAt,
+	)
 
-	for _, d := range createdDates {
-		extendedWhereArray, extendedArgs := extendWhereClause(whereArray, args, d)
-		whereClause := fmt.Sprintf(" OR (%s)", strings.Join(extendedWhereArray, " AND "))
-		query := fmt.Sprintf(latestStatsQuery, whereClause)
-		row := r.db.QueryRow(ctx, query, extendedArgs...)
-
-		v := entity.BuyerDemand{}
-		err := row.Scan(
-			&v.CurrentRangeMedianDaysToSell,
-			&v.CurrentRangeMedianSalePrice,
-			&v.NumOfForSaleProperties,
-		)
-		if err != nil {
-			return nil, errors.Wrap(err, "rows.Scan")
-		}
-		v.CreatedAt = null.TimeFrom(d)
-		resp = append(resp, v)
-	}
-	return resp, nil
+	return bd, errors.Wrap(err, "rows.Scan")
 }

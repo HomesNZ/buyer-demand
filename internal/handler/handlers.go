@@ -42,12 +42,12 @@ func Register(log *logrus.Entry, r *mux.Router, a *auth.Auth, s service.Service)
 	r.Handle("/version", stdChain.Then(handlers.MethodHandler{"GET": version.Handler}))
 	r.Handle("/health", stdChain.Then(handlers.MethodHandler{"GET": Health(log.WithField("handler", "Health"), s)}))
 
-	buyerDemandLatestStatsByPropertyID := authorisation.MiddlewareAllow(
+	buyerDemandLatestStats := authorisation.MiddlewareAllow(
 		"buyer.demand.stats",
-		BuyerDemandLatestStatsByPropertyID(log.WithField("handler", "BuyerDemandLatestStatsByPropertyID"), s),
+		BuyerDemandLatestStats(log.WithField("handler", "BuyerDemandLatestStats"), s),
 	)
 
-	r.Handle("/stats/latest/{property_id}", stdChain.Then(handlers.MethodHandler{"GET": buyerDemandLatestStatsByPropertyID}))
+	r.Handle("/stats/latest/{property_id}", stdChain.Then(handlers.MethodHandler{"GET": buyerDemandLatestStats}))
 
 	http.Handle("/", r)
 }

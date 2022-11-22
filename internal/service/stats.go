@@ -11,7 +11,7 @@ import (
 	"gopkg.in/guregu/null.v3"
 )
 
-func (s service) BuyerDemandLatestStatsByPropertyID(ctx context.Context, req *api.BuyerDemandLatestStatsByPropertyIDRequest) (*api.BuyerDemandStatsResponse, error) {
+func (s service) BuyerDemandLatestStats(ctx context.Context, req *api.BuyerDemandLatestStatsRequest) (*api.BuyerDemandStatsResponse, error) {
 	if !req.User.HasRole(auth.RoleAdmin) {
 		isOwner, err := s.repos.PropertyClaim().IsClaimedByUserID(ctx, req.PropertyID, req.User.UserID)
 		if err != nil {
@@ -29,56 +29,55 @@ func (s service) BuyerDemandLatestStatsByPropertyID(ctx context.Context, req *ap
 
 	suburbID := property.Address.SuburbID
 	propertySubCategory := property.PropertySubCategory
-	bedrooms := req.NumBedrooms
-	bathrooms := req.NumBathrooms
+	bedrooms := property.NumBedrooms
+	bathrooms := property.NumBathrooms
+	if req.NumBedrooms.Valid {
+		bedrooms = req.NumBedrooms
+	}
+	if req.NumBathrooms.Valid {
+		bathrooms = req.NumBathrooms
+	}
 
-	buyerDemands, err := s.repos.BuyerDemand().LatestStats(ctx, suburbID, bedrooms, bathrooms, propertySubCategory)
+	buyerDemand, err := s.repos.BuyerDemand().LatestStats(ctx, suburbID, bedrooms, bathrooms, propertySubCategory)
 	if err != nil {
 		return nil, errors.Wrap(err, "BuyerDemand.LatestStats")
 	}
 
 	stats := &api.BuyerDemandStatsResponse{
-		NumBedrooms:  bedrooms,
-		NumBathrooms: bathrooms,
-		SuburbID:     suburbID,
-		PropertyType: convertPropertySubCategoryToType(propertySubCategory),
+		NumBedrooms:            bedrooms,
+		NumBathrooms:           bathrooms,
+		SuburbID:               suburbID,
+		PropertyType:           convertPropertySubCategoryToType(propertySubCategory),
+		NumOfForSaleProperties: buyerDemand.NumOfForSaleProperties,
+		CreatedAt:              buyerDemand.CreatedAt,
 	}
 
-	return handlerBuyerDemands(stats, buyerDemands), nil
+	return handlerBuyerDemands(stats, buyerDemand), nil
 }
 
-func handlerBuyerDemands(stats *api.BuyerDemandStatsResponse, buyerDemands entity.BuyerDemands) *api.BuyerDemandStatsResponse {
-	if len(buyerDemands) == 0 {
+func handlerBuyerDemands(stats *api.BuyerDemandStatsResponse, buyerDemand entity.BuyerDemand) *api.BuyerDemandStatsResponse {
+	if buyerDemand.IsEmpty() {
 		return stats
 	}
 
-	if len(buyerDemands) >= 1 {
-		stats.MedianDaysToSell = buyerDemands[0].CurrentRangeMedianDaysToSell
-		stats.MedianSalePrice = buyerDemands[0].CurrentRangeMedianSalePrice
-		stats.NumOfForSaleProperties = buyerDemands[0].NumOfForSaleProperties
-		stats.CreatedAt = buyerDemands[0].CreatedAt
+	if buyerDemand.CurrentRangeMedianDaysToSell.Valid && buyerDemand.PreviousRangeMedianDaysToSell.Valid {
+		medianDaysToSellTrendPercent, err := util.IncreasedPercent(buyerDemand.CurrentRangeMedianDaysToSell.ValueOrZero(), buyerDemand.PreviousRangeMedianDaysToSell.ValueOrZero(), 1)
+		if err == nil {
+			stats.MedianDaysToSellTrendPercent = null.FloatFrom(medianDaysToSellTrendPercent)
+		}
 	}
 
-	if len(buyerDemands) >= 2 {
-		if buyerDemands[0].CurrentRangeMedianDaysToSell.Valid && buyerDemands[1].CurrentRangeMedianDaysToSell.Valid {
-			medianDaysToSellTrendPercent, err := util.IncreasedPercent(buyerDemands[0].CurrentRangeMedianDaysToSell.ValueOrZero(), buyerDemands[1].CurrentRangeMedianDaysToSell.ValueOrZero(), 1)
-			if err == nil {
-				stats.MedianDaysToSellTrendPercent = null.FloatFrom(medianDaysToSellTrendPercent)
-			}
+	if buyerDemand.CurrentRangeMedianSalePrice.Valid && buyerDemand.PreviousRangeMedianSalePrice.Valid {
+		medianSalePriceTrendPercent, err := util.IncreasedPercent(buyerDemand.CurrentRangeMedianSalePrice.ValueOrZero(), buyerDemand.PreviousRangeMedianSalePrice.ValueOrZero(), 1)
+		if err == nil {
+			stats.MedianSalePriceTrendPercent = null.FloatFrom(medianSalePriceTrendPercent)
 		}
+	}
 
-		if buyerDemands[0].CurrentRangeMedianSalePrice.Valid && buyerDemands[1].CurrentRangeMedianSalePrice.Valid {
-			medianSalePriceTrendPercent, err := util.IncreasedPercent(buyerDemands[0].CurrentRangeMedianSalePrice.ValueOrZero(), buyerDemands[1].CurrentRangeMedianSalePrice.ValueOrZero(), 1)
-			if err == nil {
-				stats.MedianSalePriceTrendPercent = null.FloatFrom(medianSalePriceTrendPercent)
-			}
-		}
-
-		if buyerDemands[0].NumOfForSaleProperties.Valid && buyerDemands[1].NumOfForSaleProperties.Valid {
-			numOfForSalePropertiesTrendPercent, err := util.IncreasedPercent(buyerDemands[0].NumOfForSaleProperties.ValueOrZero(), buyerDemands[1].NumOfForSaleProperties.ValueOrZero(), 1)
-			if err == nil {
-				stats.NumOfForSalePropertiesTrendPercent = null.FloatFrom(numOfForSalePropertiesTrendPercent)
-			}
+	if buyerDemand.CurrentRangeNumOfForSaleProperties.Valid && buyerDemand.PreviousRangeNumOfForSaleProperties.Valid {
+		numOfForSalePropertiesTrendPercent, err := util.IncreasedPercent(buyerDemand.CurrentRangeNumOfForSaleProperties.ValueOrZero(), buyerDemand.PreviousRangeNumOfForSaleProperties.ValueOrZero(), 1)
+		if err == nil {
+			stats.NumOfForSalePropertiesTrendPercent = null.FloatFrom(numOfForSalePropertiesTrendPercent)
 		}
 	}
 

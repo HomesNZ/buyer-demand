@@ -14,15 +14,15 @@ import (
 	"net/http"
 )
 
-func BuyerDemandLatestStatsByPropertyID(logger *logrus.Entry, s service.Service) http.Handler {
+func BuyerDemandLatestStats(logger *logrus.Entry, s service.Service) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		req, err := decodeBuyerDemandLatestStatsByPropertyIDRequest(r)
+		req, err := decodeBuyerDemandLatestStatsRequest(r)
 		if err != nil {
 			EncodeErrorResponse(logger, w, err)
 			return
 		}
 
-		res, err := s.BuyerDemandLatestStatsByPropertyID(r.Context(), req)
+		res, err := s.BuyerDemandLatestStats(r.Context(), req)
 		if err != nil {
 			EncodeErrorResponse(logger, w, err)
 			return
@@ -32,7 +32,7 @@ func BuyerDemandLatestStatsByPropertyID(logger *logrus.Entry, s service.Service)
 	})
 }
 
-func decodeBuyerDemandLatestStatsByPropertyIDRequest(r *http.Request) (*api.BuyerDemandLatestStatsByPropertyIDRequest, error) {
+func decodeBuyerDemandLatestStatsRequest(r *http.Request) (*api.BuyerDemandLatestStatsRequest, error) {
 	u, err := auth.UserFromHTTPRequest(r)
 	if err != nil {
 		return nil, util.Unauthorized(err.Error())
@@ -40,7 +40,7 @@ func decodeBuyerDemandLatestStatsByPropertyIDRequest(r *http.Request) (*api.Buye
 
 	vars := mux.Vars(r)
 	propertyID := vars["property_id"]
-	req := api.BuyerDemandLatestStatsByPropertyIDRequest{
+	req := api.BuyerDemandLatestStatsRequest{
 		PropertyID: propertyID,
 		User:       u,
 	}
