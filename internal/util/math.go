@@ -31,8 +31,12 @@ func Median[T Number](data []T) float64 {
 }
 
 func IncreasedPercent[T Number](current T, prev T, decimal int) (float64, error) {
+	if prev == current {
+		return 0, nil
+	}
+
 	if prev == 0 {
-		return 0, errors.New("The old data can not be zero")
+		return 0, errors.New("The previous data can not be zero")
 	}
 
 	v := ((float64(current) - float64(prev)) / float64(prev)) * 100
