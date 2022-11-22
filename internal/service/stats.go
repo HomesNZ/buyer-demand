@@ -53,22 +53,22 @@ func handlerBuyerDemands(stats *api.BuyerDemandStatsResponse, buyerDemands entit
 	}
 
 	if len(buyerDemands) >= 1 {
-		stats.MedianDaysToSell = buyerDemands[0].MedianDaysToSell
-		stats.MedianSalePrice = buyerDemands[0].MedianSalePrice
+		stats.MedianDaysToSell = buyerDemands[0].CurrentRangeMedianDaysToSell
+		stats.MedianSalePrice = buyerDemands[0].CurrentRangeMedianSalePrice
 		stats.NumOfForSaleProperties = buyerDemands[0].NumOfForSaleProperties
 		stats.CreatedAt = buyerDemands[0].CreatedAt
 	}
 
 	if len(buyerDemands) >= 2 {
-		if buyerDemands[0].MedianDaysToSell.Valid && buyerDemands[1].MedianDaysToSell.Valid {
-			medianDaysToSellTrendPercent, err := util.IncreasedPercent(buyerDemands[0].MedianDaysToSell.ValueOrZero(), buyerDemands[1].MedianDaysToSell.ValueOrZero(), 1)
+		if buyerDemands[0].CurrentRangeMedianDaysToSell.Valid && buyerDemands[1].CurrentRangeMedianDaysToSell.Valid {
+			medianDaysToSellTrendPercent, err := util.IncreasedPercent(buyerDemands[0].CurrentRangeMedianDaysToSell.ValueOrZero(), buyerDemands[1].CurrentRangeMedianDaysToSell.ValueOrZero(), 1)
 			if err == nil {
 				stats.MedianDaysToSellTrendPercent = null.FloatFrom(medianDaysToSellTrendPercent)
 			}
 		}
 
-		if buyerDemands[0].MedianSalePrice.Valid && buyerDemands[1].MedianSalePrice.Valid {
-			medianSalePriceTrendPercent, err := util.IncreasedPercent(buyerDemands[0].MedianSalePrice.ValueOrZero(), buyerDemands[1].MedianSalePrice.ValueOrZero(), 1)
+		if buyerDemands[0].CurrentRangeMedianSalePrice.Valid && buyerDemands[1].CurrentRangeMedianSalePrice.Valid {
+			medianSalePriceTrendPercent, err := util.IncreasedPercent(buyerDemands[0].CurrentRangeMedianSalePrice.ValueOrZero(), buyerDemands[1].CurrentRangeMedianSalePrice.ValueOrZero(), 1)
 			if err == nil {
 				stats.MedianSalePriceTrendPercent = null.FloatFrom(medianSalePriceTrendPercent)
 			}

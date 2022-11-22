@@ -39,13 +39,17 @@ const populateQuery = `
 	    num_bedrooms, 
 	    num_bathrooms, 
 	    property_type, 
-	    median_days_to_sell, 
-	    median_sale_price, 
-	    num_for_sale_properties, 
+        current_median_days_to_sell,
+        previous_median_days_to_sell,
+        current_median_sale_price,
+        previous_median_sale_price,
+        num_for_sale_properties,
+        current_num_for_sale_properties,
+        previous_num_for_sale_properties,
 	    created_at
 	)
 	VALUES (
-	    $1, $2, $3, $4, $5, $6, $7, now()
+	    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, now()
 	);
 `
 
@@ -74,9 +78,13 @@ func (r *repo) Populate(ctx context.Context, buyerDemands entity.BuyerDemands, n
 			bd.NumBedrooms,
 			bd.NumBathrooms,
 			bd.PropertyType,
-			bd.MedianDaysToSell,
-			bd.MedianSalePrice,
-			bd.NumOfForSaleProperties)
+			bd.CurrentRangeMedianDaysToSell,
+			bd.PreviousRangeMedianDaysToSell,
+			bd.CurrentRangeMedianSalePrice,
+			bd.PreviousRangeMedianSalePrice,
+			bd.NumOfForSaleProperties,
+			bd.CurrentRangeNumOfForSaleProperties,
+			bd.PreviousRangeNumOfForSaleProperties)
 		if err != nil {
 			err := tx.Rollback(ctx)
 			if err != nil {
@@ -179,8 +187,8 @@ func (r *repo) LatestStats(ctx context.Context, suburbID, bedroom, bathroom null
 
 		v := entity.BuyerDemand{}
 		err := row.Scan(
-			&v.MedianDaysToSell,
-			&v.MedianSalePrice,
+			&v.CurrentRangeMedianDaysToSell,
+			&v.CurrentRangeMedianSalePrice,
 			&v.NumOfForSaleProperties,
 		)
 		if err != nil {

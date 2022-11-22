@@ -9,14 +9,25 @@ import (
 const BuyerDemandKeySeparator = "-"
 
 type BuyerDemand struct {
-	NumBedrooms            null.Int    `json:"num_bedrooms"`
-	NumBathrooms           null.Int    `json:"num_bathrooms"`
-	SuburbID               null.Int    `json:"suburb_id"`
-	PropertyType           null.String `json:"property_type"`
-	MedianDaysToSell       null.Int    `json:"median_days_to_sell"`
-	MedianSalePrice        null.Float  `json:"median_sale_price"`
-	NumOfForSaleProperties null.Int    `json:"num_for_sale_properties"`
-	CreatedAt              null.Time   `json:"created_at"`
+	NumBedrooms                         null.Int    `json:"num_bedrooms"`
+	NumBathrooms                        null.Int    `json:"num_bathrooms"`
+	SuburbID                            null.Int    `json:"suburb_id"`
+	PropertyType                        null.String `json:"property_type"`
+	CurrentRangeMedianDaysToSell        null.Int    `json:"current_median_days_to_sell"`
+	PreviousRangeMedianDaysToSell       null.Int    `json:"previous_median_days_to_sell"`
+	CurrentRangeMedianSalePrice         null.Float  `json:"current_median_sale_price"`
+	PreviousRangeMedianSalePrice        null.Float  `json:"previous_median_sale_price"`
+	NumOfForSaleProperties              null.Int    `json:"num_for_sale_properties"`
+	CurrentRangeNumOfForSaleProperties  null.Int    `json:"current_num_for_sale_properties"`
+	PreviousRangeNumOfForSaleProperties null.Int    `json:"previous_num_for_sale_properties"`
+	CreatedAt                           null.Time   `json:"created_at"`
+}
+
+func (bd BuyerDemand) isEmpty() bool {
+	return bd.CurrentRangeMedianDaysToSell.IsZero() && bd.PreviousRangeMedianDaysToSell.IsZero() &&
+		bd.CurrentRangeMedianSalePrice.IsZero() && bd.PreviousRangeMedianSalePrice.IsZero() &&
+		bd.NumOfForSaleProperties.IsZero() && bd.CurrentRangeNumOfForSaleProperties.IsZero() &&
+		bd.PreviousRangeNumOfForSaleProperties.IsZero()
 }
 
 type BuyerDemands []BuyerDemand

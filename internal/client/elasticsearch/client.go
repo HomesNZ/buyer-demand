@@ -17,7 +17,7 @@ const (
 )
 
 type Client interface {
-	BySuburbID(ctx context.Context, suburbID int) (entity.MapItemESs, error)
+	BySuburbID(ctx context.Context, suburbID int, startDate string) (entity.MapItemESs, error)
 	ByPropertyID(ctx context.Context, propertyID string) (*entity.MapItemES, error)
 }
 
@@ -26,12 +26,15 @@ type client struct {
 	conn *elastic.Client
 }
 
-func (es *client) BySuburbID(ctx context.Context, suburbID int) (entity.MapItemESs, error) {
+func (es *client) BySuburbID(ctx context.Context, suburbID int, startDate string) (entity.MapItemESs, error) {
 	query := elastic.NewBoolQuery().Must(
 		elastic.NewNestedQuery(
 			"nested_address",
 			elastic.NewBoolQuery().Must(
-				elastic.NewMatchQuery("nested_address.suburb_id", suburbID))))
+				elastic.NewMatchQuery("nested_address.suburb_id", suburbID))),
+		elastic.NewBoolQuery().Should(
+			elastic.NewExistsQuery("listing_id"),
+			elastic.NewRangeQuery("latest_sold_date").Gte(startDate)))
 
 	return es.doSearch(ctx, query, 0, entity.MapItemESs{})
 }
