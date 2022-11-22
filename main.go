@@ -49,13 +49,13 @@ func main() {
 	}
 
 	if env.GetBool("BUYER_DEMAND_CRONJOB", false) {
-		log.Info("starting buyer demand cronjob")
+		log.Info("DailyBuyerDemandTableRefresh start")
 		err := s.DailyBuyerDemandTableRefresh(ctx)
 		if err != nil {
 			bugsnag.Notify(err)
 			log.WithError(err).Fatal()
 		}
-		log.Info("Buyer demand cronjob done")
+		log.Info("DailyBuyerDemandTableRefresh is done")
 		return
 	}
 

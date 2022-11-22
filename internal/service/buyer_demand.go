@@ -13,8 +13,6 @@ import (
 const suburbChunkSize = 100
 
 func (s service) DailyBuyerDemandTableRefresh(ctx context.Context) error {
-	s.logger.Info("DailyBuyerDemandTableRefresh start")
-
 	// Query all suburb ids from db
 	suburbIDs, err := s.repos.Address().AllSuburbIDs(ctx)
 	if err != nil {
@@ -69,7 +67,6 @@ func (s service) DailyBuyerDemandTableRefresh(ctx context.Context) error {
 		}
 	}
 
-	s.logger.Info("DailyBuyerDemandTableRefresh is done")
 	return nil
 }
 

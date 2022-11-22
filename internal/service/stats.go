@@ -48,6 +48,8 @@ func (s service) BuyerDemandLatestStats(ctx context.Context, req *api.BuyerDeman
 		NumBathrooms:           bathrooms,
 		SuburbID:               suburbID,
 		PropertyType:           convertPropertySubCategoryToType(propertySubCategory),
+		MedianDaysToSell:       buyerDemand.CurrentRangeMedianDaysToSell,
+		MedianSalePrice:        buyerDemand.CurrentRangeMedianSalePrice,
 		NumOfForSaleProperties: buyerDemand.NumOfForSaleProperties,
 		CreatedAt:              buyerDemand.CreatedAt,
 	}
