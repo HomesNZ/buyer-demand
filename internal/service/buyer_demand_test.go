@@ -260,7 +260,7 @@ var _ = Describe("BuyerDemand", func() {
 			PreviousRangeMedianDaysToSell:       null.Int{},
 			CurrentRangeMedianSalePrice:         null.Float{},
 			PreviousRangeMedianSalePrice:        null.Float{},
-			NumOfForSaleProperties:              null.IntFrom(1),
+			NumOfForSaleProperties:              null.IntFrom(2),
 			CurrentRangeNumOfForSaleProperties:  null.IntFrom(1),
 			PreviousRangeNumOfForSaleProperties: null.IntFrom(0),
 		},
