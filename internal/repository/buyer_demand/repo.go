@@ -97,6 +97,13 @@ func (r *repo) Populate(ctx context.Context, buyerDemands entity.BuyerDemands, n
 }
 
 const latestStatsQuery = `
+	WITH lc AS (
+		SELECT DATE_TRUNC('days', created_at) AS created_at
+		FROM homes_data_export.buyer_demand
+		WHERE FALSE %s
+		ORDER BY created_at DESC
+		LIMIT 1
+	)
 	SELECT
 	    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY current_median_days_to_sell) AS current_median_days_to_sell,
 	    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY previous_median_days_to_sell) AS previous_median_days_to_sell,
@@ -105,9 +112,9 @@ const latestStatsQuery = `
 	    SUM(num_for_sale_properties) AS num_for_sale_properties,
 	    SUM(current_num_for_sale_properties) AS current_num_for_sale_properties,
 	    SUM(previous_num_for_sale_properties) AS previous_num_for_sale_properties,
-	    MAX(created_at) AS created_at
-	FROM homes_data_export.buyer_demand
-	WHERE FALSE %s;
+	    MAX(bd.created_at) AS created_at
+	FROM homes_data_export.buyer_demand bd, lc
+	WHERE DATE_TRUNC('days', bd.created_at) = lc.created_at AND (FALSE %s);
 `
 
 func generateWhereClause(suburbID, bedroom, bathroom null.Int, propertyType null.String) ([]string, []interface{}) {
@@ -139,8 +146,6 @@ func generateWhereClause(suburbID, bedroom, bathroom null.Int, propertyType null
 		values = append(values, propertyType.ValueOrZero())
 	}
 
-	whereArray = append(whereArray, "date_trunc('days', created_at) = current_date")
-
 	return whereArray, values
 }
 
@@ -148,7 +153,7 @@ func (r *repo) LatestStats(ctx context.Context, suburbID, bedroom, bathroom null
 	whereArray, args := generateWhereClause(suburbID, bedroom, bathroom, propertyType)
 
 	whereClause := fmt.Sprintf(" OR (%s)", strings.Join(whereArray, " AND "))
-	query := fmt.Sprintf(latestStatsQuery, whereClause)
+	query := fmt.Sprintf(latestStatsQuery, whereClause, whereClause)
 	row := r.db.QueryRow(ctx, query, args...)
 
 	bd := entity.BuyerDemand{}

@@ -176,7 +176,7 @@ func (i *MapItemES) isCurrentListing() bool {
 }
 
 func (i *MapItemES) isRecentListing(startDate time.Time) bool {
-	return i.LatestListingDate.Valid && i.LatestListingDate.ValueOrZero().After(startDate)
+	return (i.LatestListingDate.Valid && i.LatestListingDate.ValueOrZero().After(startDate)) || i.ListingId.Valid
 }
 
 func (i *MapItemES) isSold() bool {
