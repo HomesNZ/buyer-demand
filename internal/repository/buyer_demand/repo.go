@@ -139,6 +139,8 @@ func generateWhereClause(suburbID, bedroom, bathroom null.Int, propertyType null
 		values = append(values, propertyType.ValueOrZero())
 	}
 
+	whereArray = append(whereArray, "date_trunc('days', created_at) = current_date")
+
 	return whereArray, values
 }
 
