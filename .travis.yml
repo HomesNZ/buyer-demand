@@ -1,0 +1,22 @@
+sudo: false
+
+language: go
+
+go:
+  - "1.19"
+
+env:
+  global:
+    - GOARCH=amd64
+    - GO111MODULE=on
+
+install: true
+
+services:
+  - docker
+before_install:
+  - pip install --user awscli
+  - export PATH=$PATH:$HOME/.local/bin
+
+script:
+  - ./bin/build

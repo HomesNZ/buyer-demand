@@ -1,0 +1,5 @@
+
+# Exit if anything fails
+set -e
+
+CGO_ENABLED=0 GOOS=linux go build -a -ldflags "-X github.com/HomesNZ/${SERVICE_NAME}/vendor/github.com/HomesNZ/go-common/version.Version=`git rev-parse HEAD` -w" .

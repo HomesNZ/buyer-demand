@@ -1,0 +1,43 @@
+
+# Exit if anything fails
+set -e
+
+# Debugging logs
+echo "TRAVIS_PULL_REQUEST: $TRAVIS_PULL_REQUEST"
+echo "TRAVIS_BRANCH: $TRAVIS_BRANCH"
+
+if [ "$TRAVIS_PULL_REQUEST" != "false" ]
+then
+  # Build for specific pull request
+  DOCKER_TAG="pr-$TRAVIS_PULL_REQUEST"
+
+  # For AWS ECR
+  export AWS_ACCESS_KEY_ID=${AWS_STAGING_KEY_ID}
+  export AWS_SECRET_ACCESS_KEY=${AWS_STAGING_SECRET_ACESS_KEY}
+  ACCOUNT_ID=${AWS_STAGING_ACCOUNT_ID}
+elif [ "$TRAVIS_BRANCH" = "master" ]
+then
+  # Only tag image as latest when Travis is running for a merge to master
+  DOCKER_TAG="latest"
+
+  # For AWS ECR
+  ACCOUNT_ID=${AWS_PRODUCTION_ACCOUNT_ID}
+elif [ "$TRAVIS_BRANCH" = "develop" ]
+then
+  # Build for staging/development
+  DOCKER_TAG="develop"
+
+  # For AWS ECR
+  export AWS_ACCESS_KEY_ID=${AWS_STAGING_KEY_ID}
+  export AWS_SECRET_ACCESS_KEY=${AWS_STAGING_SECRET_ACESS_KEY}
+  ACCOUNT_ID=${AWS_STAGING_ACCOUNT_ID}
+else
+  echo "Not building ${TRAVIS_COMMIT}"
+  exit 0
+fi
+
+echo "Building ${TRAVIS_COMMIT} as ${ACCOUNT_ID}.dkr.ecr.ap-southeast-2.amazonaws.com/${SERVICE_NAME}:${DOCKER_TAG}"
+echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+aws ecr get-login-password --region ap-southeast-2 | docker login --username AWS --password-stdin ${ACCOUNT_ID}.dkr.ecr.ap-southeast-2.amazonaws.com
+docker build -t ${ACCOUNT_ID}.dkr.ecr.ap-southeast-2.amazonaws.com/${SERVICE_NAME}:${DOCKER_TAG} .
+docker push ${ACCOUNT_ID}.dkr.ecr.ap-southeast-2.amazonaws.com/${SERVICE_NAME}:${DOCKER_TAG}
