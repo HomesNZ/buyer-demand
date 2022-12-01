@@ -12,7 +12,7 @@ import (
 )
 
 func (s service) BuyerDemandLatestStats(ctx context.Context, req *api.BuyerDemandLatestStatsRequest) (*api.BuyerDemandStatsResponse, error) {
-	if !req.User.HasRole(auth.RoleAdmin) {
+	if !req.User.HasRole(auth.RoleAdmin) && !req.User.HasRole(auth.RoleAgent) && !req.User.HasRole(auth.RolePremiumAgent) {
 		isOwner, err := s.repos.PropertyClaim().IsClaimedByUserID(ctx, req.PropertyID, req.User.UserID)
 		if err != nil {
 			return nil, errors.Wrap(err, "PropertyClaim.IsClaimedByUserID")
