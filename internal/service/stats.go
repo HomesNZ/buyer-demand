@@ -2,26 +2,14 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"github.com/HomesNZ/buyer-demand/internal/api"
 	"github.com/HomesNZ/buyer-demand/internal/entity"
 	"github.com/HomesNZ/buyer-demand/internal/util"
-	"github.com/HomesNZ/go-secret/auth"
 	"github.com/pkg/errors"
 	"gopkg.in/guregu/null.v3"
 )
 
 func (s service) BuyerDemandLatestStats(ctx context.Context, req *api.BuyerDemandLatestStatsRequest) (*api.BuyerDemandStatsResponse, error) {
-	if !req.User.HasRole(auth.RoleAdmin) && !req.User.HasRole(auth.RoleAgent) && !req.User.HasRole(auth.RolePremiumAgent) {
-		isOwner, err := s.repos.PropertyClaim().IsClaimedByUserID(ctx, req.PropertyID, req.User.UserID)
-		if err != nil {
-			return nil, errors.Wrap(err, "PropertyClaim.IsClaimedByUserID")
-		}
-		if !isOwner {
-			return nil, util.Unauthorized(fmt.Sprintf("The property is not claimed by %d", req.User.UserID))
-		}
-	}
-
 	property, err := s.esClient.ByPropertyID(ctx, req.PropertyID)
 	if err != nil {
 		return nil, errors.Wrap(err, "esClient.ByPropertyID")
